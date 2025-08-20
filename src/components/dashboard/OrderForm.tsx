@@ -77,16 +77,19 @@ const OrderForm: React.FC<OrderFormProps> = ({
     // Get next order ID
     const orderId = await firebaseStorage.getNextOrderId(agencyId);
 
-    const newOrder = {
+    const baseOrder = {
       agencyId,
       orderId,
-      workerId: userType === 'worker' ? workerId : undefined,
-      workerName: userType === 'worker' ? workerName : 'by agency',
       ...formData,
       downPayments,
       totalAmount: 0,
       createdAt: new Date()
     };
+
+    // Conditionally add worker fields only if userType is 'worker'
+    const newOrder = userType === 'worker' 
+      ? { ...baseOrder, workerId, workerName }
+      : { ...baseOrder, workerName: 'by agency' };
 
     newOrder.totalAmount = calculateOrderTotal(newOrder);
     onSubmit(newOrder);
