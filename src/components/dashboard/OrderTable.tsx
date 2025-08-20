@@ -300,7 +300,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
               </tr>
             ) : (
               filteredOrders.map((order, index) => (
-               <td colSpan={userType === 'agency' ? 11 : 10} className="px-4 py-8 text-center text-gray-500">
+                <tr key={order.id}>
                   <td className="px-4 py-3 text-sm text-gray-900 border-b">
                     #{order.orderId}
                   </td>
