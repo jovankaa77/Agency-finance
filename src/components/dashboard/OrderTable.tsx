@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Edit, Trash2, Download, Eye, Hash } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Edit, Trash2, Download, Eye, Hash, Search, Filter, X } from 'lucide-react';
 import { Order } from '../../types';
 import EditOrderModal from './EditOrderModal';
 import { generatePDF } from '../../utils/pdfGenerator';
@@ -21,6 +21,71 @@ const OrderTable: React.FC<OrderTableProps> = ({
 }) => {
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [viewingOrder, setViewingOrder] = useState<Order | null>(null);
+  
+  // Filter and search states
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedWorker, setSelectedWorker] = useState('');
+  const [selectedMonth, setSelectedMonth] = useState('');
+  const [selectedYear, setSelectedYear] = useState('');
+
+  // Get unique workers for filter dropdown
+  const uniqueWorkers = useMemo(() => {
+    const workers = orders
+      .filter(order => order.workerName)
+      .map(order => order.workerName!)
+      .filter((worker, index, array) => array.indexOf(worker) === index)
+      .sort();
+    return workers;
+  }, [orders]);
+
+  // Generate years from 2025 to 2040
+  const years = Array.from({ length: 16 }, (_, i) => 2025 + i);
+  const months = [
+    { value: '01', label: 'January' },
+    { value: '02', label: 'February' },
+    { value: '03', label: 'March' },
+    { value: '04', label: 'April' },
+    { value: '05', label: 'May' },
+    { value: '06', label: 'June' },
+    { value: '07', label: 'July' },
+    { value: '08', label: 'August' },
+    { value: '09', label: 'September' },
+    { value: '10', label: 'October' },
+    { value: '11', label: 'November' },
+    { value: '12', label: 'December' }
+  ];
+
+  // Filter and search logic
+  const filteredOrders = useMemo(() => {
+    return orders.filter(order => {
+      // Search filter
+      const searchLower = searchTerm.toLowerCase();
+      const matchesSearch = !searchTerm || 
+        order.customerName.toLowerCase().includes(searchLower) ||
+        order.orderId.toString().includes(searchLower) ||
+        order.orderDate.includes(searchTerm) ||
+        order.totalAmount.toString().includes(searchTerm) ||
+        order.status.toLowerCase().includes(searchLower) ||
+        order.validationStatus.toLowerCase().includes(searchLower) ||
+        (order.workerName && order.workerName.toLowerCase().includes(searchLower));
+
+      // Worker filter
+      const matchesWorker = !selectedWorker || order.workerName === selectedWorker;
+
+      // Month and year filter
+      let matchesDate = true;
+      if (selectedMonth || selectedYear) {
+        const orderDate = new Date(order.orderDate);
+        const orderMonth = (orderDate.getMonth() + 1).toString().padStart(2, '0');
+        const orderYear = orderDate.getFullYear().toString();
+        
+        matchesDate = (!selectedMonth || orderMonth === selectedMonth) &&
+                     (!selectedYear || orderYear === selectedYear);
+      }
+
+      return matchesSearch && matchesWorker && matchesDate;
+    });
+  }, [orders, searchTerm, selectedWorker, selectedMonth, selectedYear]);
 
   const handleEdit = (order: Order) => {
     setEditingOrder(order);
@@ -38,12 +103,19 @@ const OrderTable: React.FC<OrderTableProps> = ({
 
   const handleDownloadAllPDF = async () => {
     try {
-      const pdf = await generatePDF(orders, 'All Orders Report', agencyName);
+      const pdf = await generatePDF(filteredOrders, 'All Orders Report', agencyName);
       pdf.save(`${agencyName}_all_orders_${new Date().toISOString().split('T')[0]}.pdf`);
     } catch (error) {
       console.error('Error generating PDF:', error);
       alert('Failed to generate PDF. Please try again.');
     }
+  };
+
+  const clearFilters = () => {
+    setSearchTerm('');
+    setSelectedWorker('');
+    setSelectedMonth('');
+    setSelectedYear('');
   };
 
   const getStatusBadge = (status: string) => {
@@ -89,21 +161,95 @@ const OrderTable: React.FC<OrderTableProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Action Bar */}
-      <div className="flex justify-between items-center">
-        <div className="text-sm text-gray-600">
-          Total: {orders.length} orders
+      {/* Search and Filter Bar */}
+      <div className="bg-gray-50 p-4 rounded-lg border">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
+          {/* Search Input */}
+          <div className="lg:col-span-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <input
+                type="text"
+                placeholder="Search by name, order ID, date, amount, status..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+              />
+            </div>
+          </div>
+
+          {/* Worker Filter */}
+          {userType === 'agency' && (
+            <div>
+              <select
+                value={selectedWorker}
+                onChange={(e) => setSelectedWorker(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+              >
+                <option value="">All Workers</option>
+                {uniqueWorkers.map(worker => (
+                  <option key={worker} value={worker}>{worker}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Month Filter */}
+          <div>
+            <select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            >
+              <option value="">All Months</option>
+              {months.map(month => (
+                <option key={month.value} value={month.value}>{month.label}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Year Filter */}
+          <div>
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            >
+              <option value="">All Years</option>
+              {years.map(year => (
+                <option key={year} value={year.toString()}>{year}</option>
+              ))}
+            </select>
+          </div>
         </div>
+
+        {/* Filter Actions */}
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-gray-600">
+            Showing {filteredOrders.length} of {orders.length} orders
+          </div>
+          <button
+            onClick={clearFilters}
+            className="inline-flex items-center px-3 py-1 text-sm text-gray-600 hover:text-gray-800 transition-colors"
+          >
+            <X className="h-4 w-4 mr-1" />
+            Clear Filters
+          </button>
+        </div>
+      </div>
+
+      {/* Action Bar */}
+      <div className="flex justify-end">
         <button
           onClick={handleDownloadAllPDF}
           className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
         >
           <Download className="h-4 w-4 mr-2" />
-          Download All PDF
+          Download PDF ({filteredOrders.length} orders)
         </button>
       </div>
 
-      {/* Simple Table */}
+      {/* Table */}
       <div className="overflow-x-auto">
         <table className="min-w-full bg-white border border-gray-200">
           <thead className="bg-gray-50">
@@ -145,66 +291,74 @@ const OrderTable: React.FC<OrderTableProps> = ({
             </tr>
           </thead>
           <tbody>
-            {orders.map((order, index) => (
-              <tr key={order.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                <td className="px-4 py-3 text-sm text-gray-900 border-b">
-                  #{order.orderId}
-                </td>
-                <td className="px-4 py-3 text-sm text-gray-900 border-b">
-                  {order.customerName}
-                </td>
-                <td className="px-4 py-3 text-sm text-gray-900 border-b">
-                  {order.orderType}
-                </td>
-                <td className="px-4 py-3 text-sm text-gray-900 border-b">
-                  {formatDate(order.orderDate)}
-                </td>
-                <td className="px-4 py-3 text-sm text-gray-900 border-b">
-                  {formatDate(order.deadline)}
-                </td>
-                <td className="px-4 py-3 text-sm font-medium text-gray-900 border-b">
-                  {formatCurrency(order.totalAmount)}
-                </td>
-                <td className="px-4 py-3 text-sm border-b">
-                  {getStatusBadge(order.status)}
-                </td>
-                {userType === 'agency' && (
-                  <td className="px-4 py-3 text-sm border-b">
-                    {getValidationBadge(order.validationStatus)}
-                  </td>
-                )}
-                {userType === 'agency' && (
-                  <td className="px-4 py-3 text-sm text-gray-900 border-b">
-                    {order.workerName || '-'}
-                  </td>
-                )}
-                <td className="px-4 py-3 text-sm border-b">
-                  <div className="flex items-center justify-center space-x-2">
-                    <button
-                      onClick={() => handleView(order)}
-                      className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
-                      title="View Details"
-                    >
-                      <Eye className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => handleEdit(order)}
-                      className="text-indigo-600 hover:text-indigo-900 p-1 rounded hover:bg-indigo-50"
-                      title="Edit Order"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(order.id)}
-                      className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
-                      title="Delete Order"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
+            {filteredOrders.length === 0 ? (
+              <tr>
+                <td colSpan={userType === 'agency' ? 10 : 8} className="px-4 py-8 text-center text-gray-500">
+                  No orders found matching your filters
                 </td>
               </tr>
-            ))}
+            ) : (
+              filteredOrders.map((order, index) => (
+                <tr key={order.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                  <td className="px-4 py-3 text-sm text-gray-900 border-b">
+                    #{order.orderId}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-900 border-b">
+                    {order.customerName}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-900 border-b">
+                    {order.orderType}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-900 border-b">
+                    {formatDate(order.orderDate)}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-900 border-b">
+                    {formatDate(order.deadline)}
+                  </td>
+                  <td className="px-4 py-3 text-sm font-medium text-gray-900 border-b">
+                    {formatCurrency(order.totalAmount)}
+                  </td>
+                  <td className="px-4 py-3 text-sm border-b">
+                    {getStatusBadge(order.status)}
+                  </td>
+                  {userType === 'agency' && (
+                    <td className="px-4 py-3 text-sm border-b">
+                      {getValidationBadge(order.validationStatus)}
+                    </td>
+                  )}
+                  {userType === 'agency' && (
+                    <td className="px-4 py-3 text-sm text-gray-900 border-b">
+                      {order.workerName || '-'}
+                    </td>
+                  )}
+                  <td className="px-4 py-3 text-sm border-b">
+                    <div className="flex items-center justify-center space-x-2">
+                      <button
+                        onClick={() => handleView(order)}
+                        className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
+                        title="View Details"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleEdit(order)}
+                        className="text-indigo-600 hover:text-indigo-900 p-1 rounded hover:bg-indigo-50"
+                        title="Edit Order"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(order.id)}
+                        className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
+                        title="Delete Order"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
