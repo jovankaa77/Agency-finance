@@ -275,11 +275,9 @@ const OrderTable: React.FC<OrderTableProps> = ({
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border-b">
                 Status
               </th>
-              {userType === 'agency' && (
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border-b">
-                  Validation
-                </th>
-              )}
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border-b">
+                Validation
+              </th>
               {userType === 'agency' && (
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border-b">
                   Worker
@@ -293,7 +291,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
           <tbody>
             {filteredOrders.length === 0 ? (
               <tr>
-                <td colSpan={userType === 'agency' ? 10 : 8} className="px-4 py-8 text-center text-gray-500">
+                <td colSpan={userType === 'agency' ? 10 : 9} className="px-4 py-8 text-center text-gray-500">
                   No orders found matching your filters
                 </td>
               </tr>
@@ -321,11 +319,9 @@ const OrderTable: React.FC<OrderTableProps> = ({
                   <td className="px-4 py-3 text-sm border-b">
                     {getStatusBadge(order.status)}
                   </td>
-                  {userType === 'agency' && (
-                    <td className="px-4 py-3 text-sm border-b">
-                      {getValidationBadge(order.validationStatus)}
-                    </td>
-                  )}
+                  <td className="px-4 py-3 text-sm border-b">
+                    {getValidationBadge(order.validationStatus)}
+                  </td>
                   {userType === 'agency' && (
                     <td className="px-4 py-3 text-sm text-gray-900 border-b">
                       {order.workerName || '-'}
@@ -432,6 +428,13 @@ const OrderTable: React.FC<OrderTableProps> = ({
                 </div>
                 
                 {userType === 'agency' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Validation Status</label>
+                    {getValidationBadge(viewingOrder.validationStatus)}
+                  </div>
+                )}
+                
+                {userType === 'worker' && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Validation Status</label>
                     {getValidationBadge(viewingOrder.validationStatus)}

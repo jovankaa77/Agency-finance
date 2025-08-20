@@ -260,6 +260,18 @@ const EditOrderModal: React.FC<EditOrderModalProps> = ({
             </div>
           )}
 
+          {userType === 'worker' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Validation Status
+              </label>
+              <div className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-600">
+                {formData.validationStatus}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Only admin can change validation status</p>
+            </div>
+          )}
+
           <div className="flex justify-end gap-4 pt-4">
             <button
               type="button"
