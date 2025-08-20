@@ -273,6 +273,9 @@ const OrderTable: React.FC<OrderTableProps> = ({
                 Amount
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border-b">
+                Down Payments
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border-b">
                 Status
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border-b">
@@ -297,7 +300,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
               </tr>
             ) : (
               filteredOrders.map((order, index) => (
-                <tr key={order.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+               <td colSpan={userType === 'agency' ? 11 : 10} className="px-4 py-8 text-center text-gray-500">
                   <td className="px-4 py-3 text-sm text-gray-900 border-b">
                     #{order.orderId}
                   </td>
@@ -315,6 +318,15 @@ const OrderTable: React.FC<OrderTableProps> = ({
                   </td>
                   <td className="px-4 py-3 text-sm font-medium text-gray-900 border-b">
                     {formatCurrency(order.totalAmount)}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-900 border-b">
+                    <div className="space-y-1">
+                      {order.downPayments.map((dp, dpIndex) => (
+                        <div key={dp.id} className="text-xs">
+                          <span className="font-medium">{dp.label}:</span> {formatCurrency(dp.amount || 0)}
+                        </div>
+                      ))}
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-sm border-b">
                     {getStatusBadge(order.status)}
