@@ -80,8 +80,8 @@ const OrderForm: React.FC<OrderFormProps> = ({
     const newOrder = {
       agencyId,
       orderId,
-      workerId,
-      workerName,
+      workerId: userType === 'worker' ? workerId : undefined,
+      workerName: userType === 'worker' ? workerName : 'by agency',
       ...formData,
       downPayments,
       totalAmount: 0,

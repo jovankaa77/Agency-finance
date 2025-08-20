@@ -336,7 +336,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
                   </td>
                   {userType === 'agency' && (
                     <td className="px-4 py-3 text-sm text-gray-900 border-b">
-                      {order.workerName || '-'}
+                      {order.workerName || 'by agency'}
                     </td>
                   )}
                   <td className="px-4 py-3 text-sm border-b">
