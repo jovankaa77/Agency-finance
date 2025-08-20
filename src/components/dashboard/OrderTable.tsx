@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Edit, Trash2, Download, Eye, Hash, Calendar, User, Package, DollarSign, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Edit, Trash2, Download, Eye, Hash } from 'lucide-react';
 import { Order } from '../../types';
 import EditOrderModal from './EditOrderModal';
 import { generatePDF } from '../../utils/pdfGenerator';
@@ -47,63 +47,26 @@ const OrderTable: React.FC<OrderTableProps> = ({
   };
 
   const getStatusBadge = (status: string) => {
-    const baseClasses = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium";
-    
     switch (status) {
       case 'Success':
-        return (
-          <span className={`${baseClasses} bg-green-100 text-green-800`}>
-            <CheckCircle className="w-3 h-3 mr-1" />
-            Success
-          </span>
-        );
+        return <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">Success</span>;
       case 'Proses':
-        return (
-          <span className={`${baseClasses} bg-yellow-100 text-yellow-800`}>
-            <Clock className="w-3 h-3 mr-1" />
-            Proses
-          </span>
-        );
+        return <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">Proses</span>;
       default:
-        return (
-          <span className={`${baseClasses} bg-gray-100 text-gray-800`}>
-            {status}
-          </span>
-        );
+        return <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs">{status}</span>;
     }
   };
 
   const getValidationBadge = (validationStatus: string) => {
-    const baseClasses = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium";
-    
     switch (validationStatus) {
       case 'Valid':
-        return (
-          <span className={`${baseClasses} bg-green-100 text-green-800`}>
-            <CheckCircle className="w-3 h-3 mr-1" />
-            Valid
-          </span>
-        );
+        return <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">Valid</span>;
       case 'Non Valid':
-        return (
-          <span className={`${baseClasses} bg-red-100 text-red-800`}>
-            <XCircle className="w-3 h-3 mr-1" />
-            Non Valid
-          </span>
-        );
+        return <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs">Non Valid</span>;
       case 'Pending':
-        return (
-          <span className={`${baseClasses} bg-yellow-100 text-yellow-800`}>
-            <Clock className="w-3 h-3 mr-1" />
-            Pending
-          </span>
-        );
+        return <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">Pending</span>;
       default:
-        return (
-          <span className={`${baseClasses} bg-gray-100 text-gray-800`}>
-            {validationStatus}
-          </span>
-        );
+        return <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs">{validationStatus}</span>;
     }
   };
 
@@ -118,7 +81,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
   if (orders.length === 0) {
     return (
       <div className="text-center py-12">
-        <Package className="mx-auto h-12 w-12 text-gray-400 mb-4" />
         <h3 className="text-lg font-medium text-gray-900 mb-2">No orders yet</h3>
         <p className="text-gray-600">Start by adding your first order to track your business.</p>
       </div>
@@ -141,96 +103,83 @@ const OrderTable: React.FC<OrderTableProps> = ({
         </button>
       </div>
 
-      {/* Desktop Table */}
-      <div className="hidden lg:block overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
+      {/* Simple Table */}
+      <div className="overflow-x-auto">
+        <table className="min-w-full bg-white border border-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Order Info
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border-b">
+                Order ID
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border-b">
                 Customer
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Dates
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border-b">
+                Order Type
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border-b">
+                Order Date
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border-b">
+                Deadline
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border-b">
                 Amount
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border-b">
                 Status
               </th>
               {userType === 'agency' && (
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border-b">
                   Validation
                 </th>
               )}
               {userType === 'agency' && (
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border-b">
                   Worker
                 </th>
               )}
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase border-b">
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {orders.map((order) => (
-              <tr key={order.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center">
-                    <Hash className="h-4 w-4 text-gray-400 mr-2" />
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">#{order.orderId}</div>
-                      <div className="text-sm text-gray-500">{order.orderType}</div>
-                    </div>
-                  </div>
+          <tbody>
+            {orders.map((order, index) => (
+              <tr key={order.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                <td className="px-4 py-3 text-sm text-gray-900 border-b">
+                  #{order.orderId}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center">
-                    <User className="h-4 w-4 text-gray-400 mr-2" />
-                    <div className="text-sm font-medium text-gray-900">{order.customerName}</div>
-                  </div>
+                <td className="px-4 py-3 text-sm text-gray-900 border-b">
+                  {order.customerName}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  <div className="space-y-1">
-                    <div className="flex items-center">
-                      <Calendar className="h-3 w-3 text-gray-400 mr-1" />
-                      <span className="text-xs text-gray-500">Order:</span>
-                      <span className="ml-1">{formatDate(order.orderDate)}</span>
-                    </div>
-                    <div className="flex items-center">
-                      <Calendar className="h-3 w-3 text-gray-400 mr-1" />
-                      <span className="text-xs text-gray-500">Due:</span>
-                      <span className="ml-1">{formatDate(order.deadline)}</span>
-                    </div>
-                  </div>
+                <td className="px-4 py-3 text-sm text-gray-900 border-b">
+                  {order.orderType}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center">
-                    <DollarSign className="h-4 w-4 text-gray-400 mr-2" />
-                    <div className="text-sm font-medium text-gray-900">
-                      {formatCurrency(order.totalAmount)}
-                    </div>
-                  </div>
+                <td className="px-4 py-3 text-sm text-gray-900 border-b">
+                  {formatDate(order.orderDate)}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-4 py-3 text-sm text-gray-900 border-b">
+                  {formatDate(order.deadline)}
+                </td>
+                <td className="px-4 py-3 text-sm font-medium text-gray-900 border-b">
+                  {formatCurrency(order.totalAmount)}
+                </td>
+                <td className="px-4 py-3 text-sm border-b">
                   {getStatusBadge(order.status)}
                 </td>
                 {userType === 'agency' && (
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-4 py-3 text-sm border-b">
                     {getValidationBadge(order.validationStatus)}
                   </td>
                 )}
                 {userType === 'agency' && (
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-4 py-3 text-sm text-gray-900 border-b">
                     {order.workerName || '-'}
                   </td>
                 )}
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <div className="flex items-center justify-end space-x-2">
+                <td className="px-4 py-3 text-sm border-b">
+                  <div className="flex items-center justify-center space-x-2">
                     <button
                       onClick={() => handleView(order)}
                       className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
@@ -258,78 +207,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
             ))}
           </tbody>
         </table>
-      </div>
-
-      {/* Mobile Cards */}
-      <div className="lg:hidden space-y-4">
-        {orders.map((order) => (
-          <div key={order.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center">
-                <Hash className="h-4 w-4 text-gray-400 mr-2" />
-                <span className="font-medium text-gray-900">#{order.orderId}</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => handleView(order)}
-                  className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
-                >
-                  <Eye className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => handleEdit(order)}
-                  className="text-indigo-600 hover:text-indigo-900 p-1 rounded hover:bg-indigo-50"
-                >
-                  <Edit className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => handleDelete(order.id)}
-                  className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <div className="flex items-center">
-                <User className="h-4 w-4 text-gray-400 mr-2" />
-                <span className="text-sm text-gray-900">{order.customerName}</span>
-              </div>
-              
-              <div className="flex items-center">
-                <Package className="h-4 w-4 text-gray-400 mr-2" />
-                <span className="text-sm text-gray-900">{order.orderType}</span>
-              </div>
-              
-              <div className="flex items-center">
-                <DollarSign className="h-4 w-4 text-gray-400 mr-2" />
-                <span className="text-sm font-medium text-gray-900">
-                  {formatCurrency(order.totalAmount)}
-                </span>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <Calendar className="h-4 w-4 text-gray-400 mr-2" />
-                  <span className="text-sm text-gray-500">
-                    {formatDate(order.orderDate)} - {formatDate(order.deadline)}
-                  </span>
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-between pt-2">
-                <div className="flex items-center space-x-2">
-                  {getStatusBadge(order.status)}
-                  {userType === 'agency' && getValidationBadge(order.validationStatus)}
-                </div>
-                {userType === 'agency' && order.workerName && (
-                  <span className="text-xs text-gray-500">{order.workerName}</span>
-                )}
-              </div>
-            </div>
-          </div>
-        ))}
       </div>
 
       {/* Edit Modal */}
