@@ -25,11 +25,13 @@ export const generatePDF = async (orders: Order[], title: string, agencyName: st
   // Table header
   let yPosition = 115;
   pdf.setFontSize(10);
-  pdf.text('Date', 20, yPosition);
-  pdf.text('Customer', 50, yPosition);
-  pdf.text('Type', 100, yPosition);
-  pdf.text('Amount', 130, yPosition);
-  pdf.text('Status', 160, yPosition);
+  pdf.text('Order ID', 20, yPosition);
+  pdf.text('Date', 45, yPosition);
+  pdf.text('Customer', 75, yPosition);
+  pdf.text('Type', 115, yPosition);
+  pdf.text('Amount', 145, yPosition);
+  pdf.text('Status', 170, yPosition);
+  pdf.text('Validation', 190, yPosition);
   
   // Table data
   orders.forEach((order, index) => {
@@ -39,11 +41,13 @@ export const generatePDF = async (orders: Order[], title: string, agencyName: st
       yPosition = 30;
     }
     
-    pdf.text(new Date(order.orderDate).toLocaleDateString(), 20, yPosition);
-    pdf.text(order.customerName.substring(0, 15), 50, yPosition);
-    pdf.text(order.orderType.substring(0, 15), 100, yPosition);
-    pdf.text(`Rp ${order.totalAmount.toLocaleString()}`, 130, yPosition);
-    pdf.text(order.status, 160, yPosition);
+    pdf.text(`#${order.orderId}`, 20, yPosition);
+    pdf.text(new Date(order.orderDate).toLocaleDateString(), 45, yPosition);
+    pdf.text(order.customerName.substring(0, 12), 75, yPosition);
+    pdf.text(order.orderType.substring(0, 12), 115, yPosition);
+    pdf.text(`Rp ${order.totalAmount.toLocaleString()}`, 145, yPosition);
+    pdf.text(order.status, 170, yPosition);
+    pdf.text(order.validationStatus, 190, yPosition);
   });
   
   return pdf;
