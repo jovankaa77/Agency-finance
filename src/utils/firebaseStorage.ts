@@ -351,6 +351,40 @@ export const firebaseStorage = {
     }
   },
 
+  async getSentMessages(userId: string, userType: 'agency' | 'worker'): Promise<Message[]> {
+    try {
+      let q;
+      if (userType === 'worker') {
+        q = query(
+          collection(db, 'messages'), 
+          where('workerId', '==', userId),
+          where('fromType', '==', 'worker')
+        );
+      } else {
+        q = query(
+          collection(db, 'messages'), 
+          where('agencyId', '==', userId),
+          where('fromType', '==', 'agency')
+        );
+      }
+      const querySnapshot = await getDocs(q);
+      const messages = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Message[];
+      
+      // Sort by createdAt in JavaScript instead of Firestore
+      return messages.sort((a, b) => {
+        const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt);
+        const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt);
+        return dateB.getTime() - dateA.getTime();
+      });
+    } catch (error) {
+      console.error('Error getting sent messages:', error);
+      return [];
+    }
+  },
+
   async sendMessage(message: Omit<Message, 'id'>): Promise<string | null> {
     try {
       const docRef = await addDoc(collection(db, 'messages'), {

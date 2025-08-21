@@ -21,6 +21,7 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({
   workers = []
 }) => {
   const [messages, setMessages] = useState<Message[]>([]);
+  const [sentMessages, setSentMessages] = useState<Message[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedWorkerId, setSelectedWorkerId] = useState('');
   const [messageTitle, setMessageTitle] = useState('');
@@ -29,6 +30,7 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({
 
   useEffect(() => {
     loadMessages();
+    loadSentMessages();
   }, [userType, workerId, agencyId]);
 
   const loadMessages = async () => {
@@ -38,6 +40,16 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({
       setMessages(fetchedMessages);
     } catch (error) {
       console.error('Error loading messages:', error);
+    }
+  };
+
+  const loadSentMessages = async () => {
+    try {
+      const userId = userType === 'worker' ? workerId! : agencyId;
+      const fetchedSentMessages = await firebaseStorage.getSentMessages(userId, userType);
+      setSentMessages(fetchedSentMessages);
+    } catch (error) {
+      console.error('Error loading sent messages:', error);
     }
   };
 
@@ -104,6 +116,8 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({
       setMessageContent('');
       setIsModalOpen(false);
       
+      // Reload both received and sent messages
+      await loadSentMessages();
       alert('Message sent successfully!');
     } catch (error) {
       console.error('Error sending message:', error);
@@ -235,6 +249,48 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({
           )}
         </div>
 
+        {/* Sent Messages History */}
+        <div className="mb-8">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Sent Messages History</h3>
+          {sentMessages.length === 0 ? (
+            <div className="text-center py-6 bg-gray-50 rounded-lg">
+              <MessageCircle className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+              <p className="text-gray-500">No sent messages yet</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {sentMessages.map(message => (
+                <div
+                  key={message.id}
+                  className="p-4 border border-green-200 bg-green-50 rounded-lg"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h4 className="font-medium text-green-900">{message.title}</h4>
+                        <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
+                          {message.isRead ? 'Read' : 'Unread'}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-2">To: {message.toName}</p>
+                      <p className="text-gray-700">{message.content}</p>
+                      <p className="text-xs text-gray-500 mt-2">{formatDate(message.createdAt)}</p>
+                    </div>
+                    <div className="flex items-center gap-2 ml-4">
+                      <button
+                        onClick={() => handleDeleteMessage(message.id)}
+                        className="p-1 text-red-600 hover:bg-red-100 rounded transition-colors"
+                        title="Delete message"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
         {/* Workers List */}
         <div>
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Send Message to Workers</h3>
@@ -394,59 +450,106 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({
         </div>
       </div>
 
-      {filteredMessages.length === 0 ? (
-        <div className="text-center py-8">
-          <MessageCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-500">No messages yet</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {filteredMessages.map(message => (
-            <div
-              key={message.id}
-              className={`p-4 border rounded-lg transition-all ${
-                message.isRead 
-                  ? 'border-gray-200 bg-white' 
-                  : 'border-blue-200 bg-blue-50'
-              }`}
-            >
-              <div className="flex items-start justify-between mb-2">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className={`font-medium ${message.isRead ? 'text-gray-900' : 'text-blue-900'}`}>
-                      {message.title}
-                    </h3>
-                    {!message.isRead && (
-                      <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
-                    )}
+      {/* Messages from Agency */}
+      <div className="mb-8">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Messages from Agency</h3>
+        {filteredMessages.length === 0 ? (
+          <div className="text-center py-6 bg-gray-50 rounded-lg">
+            <MessageCircle className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+            <p className="text-gray-500">No messages from agency yet</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {filteredMessages.map(message => (
+              <div
+                key={message.id}
+                className={`p-4 border rounded-lg transition-all ${
+                  message.isRead 
+                    ? 'border-gray-200 bg-white' 
+                    : 'border-blue-200 bg-blue-50'
+                }`}
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className={`font-medium ${message.isRead ? 'text-gray-900' : 'text-blue-900'}`}>
+                        {message.title}
+                      </h3>
+                      {!message.isRead && (
+                        <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-600 mb-2">From: {message.fromName}</p>
+                    <p className="text-gray-700">{message.content}</p>
+                    <p className="text-xs text-gray-500 mt-2">{formatDate(message.createdAt)}</p>
                   </div>
-                  <p className="text-sm text-gray-600 mb-2">From: {message.fromName}</p>
-                  <p className="text-gray-700">{message.content}</p>
-                  <p className="text-xs text-gray-500 mt-2">{formatDate(message.createdAt)}</p>
-                </div>
-                <div className="flex items-center gap-2 ml-4">
-                  {!message.isRead && (
+                  <div className="flex items-center gap-2 ml-4">
+                    {!message.isRead && (
+                      <button
+                        onClick={() => handleMarkAsRead(message.id)}
+                        className="p-1 text-blue-600 hover:bg-blue-100 rounded transition-colors"
+                        title="Mark as read"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
+                    )}
                     <button
-                      onClick={() => handleMarkAsRead(message.id)}
-                      className="p-1 text-blue-600 hover:bg-blue-100 rounded transition-colors"
-                      title="Mark as read"
+                      onClick={() => handleDeleteMessage(message.id)}
+                      className="p-1 text-red-600 hover:bg-red-100 rounded transition-colors"
+                      title="Delete message"
                     >
-                      <Eye className="h-4 w-4" />
+                      <Trash2 className="h-4 w-4" />
                     </button>
-                  )}
-                  <button
-                    onClick={() => handleDeleteMessage(message.id)}
-                    className="p-1 text-red-600 hover:bg-red-100 rounded transition-colors"
-                    title="Delete message"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Sent Messages History */}
+      <div className="mb-8">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Sent Messages History</h3>
+        {sentMessages.length === 0 ? (
+          <div className="text-center py-6 bg-gray-50 rounded-lg">
+            <MessageCircle className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+            <p className="text-gray-500">No sent messages yet</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {sentMessages.map(message => (
+              <div
+                key={message.id}
+                className="p-4 border border-green-200 bg-green-50 rounded-lg"
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-medium text-green-900">{message.title}</h3>
+                      <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
+                        {message.isRead ? 'Read' : 'Unread'}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-2">To: {message.toName}</p>
+                    <p className="text-gray-700">{message.content}</p>
+                    <p className="text-xs text-gray-500 mt-2">{formatDate(message.createdAt)}</p>
+                  </div>
+                  <div className="flex items-center gap-2 ml-4">
+                    <button
+                      onClick={() => handleDeleteMessage(message.id)}
+                      className="p-1 text-red-600 hover:bg-red-100 rounded transition-colors"
+                      title="Delete message"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Send Message Modal for Worker */}
       {isModalOpen && (
