@@ -27,7 +27,6 @@ const Dashboard: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'orders' | 'expenses' | 'analysis'>('orders');
   const [activeTab, setActiveTab] = useState<'orders' | 'expenses' | 'analysis' | 'profit-analysis'>('orders');
   const [loading, setLoading] = useState(true);
 
