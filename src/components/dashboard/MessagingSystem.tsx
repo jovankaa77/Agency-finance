@@ -523,7 +523,7 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({
             </form>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
