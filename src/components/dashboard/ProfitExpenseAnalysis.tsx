@@ -10,7 +10,10 @@ import {
   getMonthExpenses,
   getYearExpenses,
   getMonthlyRevenueData,
-  getMonthlyExpenseData
+  getMonthlyExpenseData,
+  getWeeksInMonth,
+  getWeekRevenueForMonth,
+  getWeekExpensesForMonth
 } from '../../utils/calculations';
 
 interface ProfitExpenseAnalysisProps {
@@ -34,8 +37,8 @@ const ProfitExpenseAnalysis: React.FC<ProfitExpenseAnalysisProps> = ({
     return `Rp ${value.toLocaleString('id-ID')}`;
   };
 
-  // Generate years from 2020 to 2030
-  const years = Array.from({ length: 11 }, (_, i) => 2020 + i);
+  // Generate years from 2020 to 2045
+  const years = Array.from({ length: 26 }, (_, i) => 2020 + i);
   const months = [
     { value: 1, label: 'January' },
     { value: 2, label: 'February' },
@@ -99,42 +102,6 @@ const ProfitExpenseAnalysis: React.FC<ProfitExpenseAnalysisProps> = ({
       });
     }
   }, [orders, expenses, selectedYear, selectedMonth, periodType, userType]);
-
-  // Helper functions for weekly calculations
-  const getWeeksInMonth = (year: number, month: number) => {
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const days = lastDay.getDate();
-    return Math.ceil(days / 7);
-  };
-
-  const getWeekRevenueForMonth = (orders: Order[], year: number, month: number, week: number) => {
-    const startDate = new Date(year, month, (week - 1) * 7 + 1);
-    const endDate = new Date(year, month, week * 7);
-    
-    return orders
-      .filter(order => {
-        const orderDate = new Date(order.orderDate);
-        return order.status === 'Success' && 
-               orderDate >= startDate && 
-               orderDate <= endDate;
-      })
-      .reduce((sum, order) => sum + order.totalAmount, 0);
-  };
-
-  const getWeekExpensesForMonth = (expenses: Expense[], year: number, month: number, week: number) => {
-    const startDate = new Date(year, month, (week - 1) * 7 + 1);
-    const endDate = new Date(year, month, week * 7);
-    
-    return expenses
-      .filter(expense => {
-        const expenseDate = new Date(expense.date);
-        return expense.status === 'Success' && 
-               expenseDate >= startDate && 
-               expenseDate <= endDate;
-      })
-      .reduce((sum, expense) => sum + expense.amount, 0);
-  };
 
   // Calculate totals
   const totalRevenue = analysisData.reduce((sum, item) => sum + item.revenue, 0);

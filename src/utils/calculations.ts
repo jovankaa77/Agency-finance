@@ -163,3 +163,38 @@ export const getDailyAnalysisData = (orders: Order[], expenses: Expense[], days:
   
   return data;
 };
+
+export const getWeeksInMonth = (year: number, month: number): number => {
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const days = lastDay.getDate();
+  return Math.ceil(days / 7);
+};
+
+export const getWeekRevenueForMonth = (orders: Order[], year: number, month: number, week: number): number => {
+  const startDate = new Date(year, month, (week - 1) * 7 + 1);
+  const endDate = new Date(year, month, week * 7);
+  
+  return orders
+    .filter(order => {
+      const orderDate = new Date(order.orderDate);
+      return order.status === 'Success' && 
+             orderDate >= startDate && 
+             orderDate <= endDate;
+    })
+    .reduce((sum, order) => sum + order.totalAmount, 0);
+};
+
+export const getWeekExpensesForMonth = (expenses: Expense[], year: number, month: number, week: number): number => {
+  const startDate = new Date(year, month, (week - 1) * 7 + 1);
+  const endDate = new Date(year, month, week * 7);
+  
+  return expenses
+    .filter(expense => {
+      const expenseDate = new Date(expense.date);
+      return expense.status === 'Success' && 
+             expenseDate >= startDate && 
+             expenseDate <= endDate;
+    })
+    .reduce((sum, expense) => sum + expense.amount, 0);
+};
