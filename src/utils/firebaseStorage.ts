@@ -323,14 +323,20 @@ export const firebaseStorage = {
     try {
       const q = query(
         collection(db, 'messages'), 
-        where('workerId', '==', workerId),
-        orderBy('createdAt', 'desc')
+        where('workerId', '==', workerId)
       );
       const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => ({
+      const messages = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as Message[];
+      
+      // Sort by createdAt in JavaScript instead of Firestore
+      return messages.sort((a, b) => {
+        const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt);
+        const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt);
+        return dateB.getTime() - dateA.getTime();
+      });
     } catch (error) {
       console.error('Error getting messages:', error);
       return [];
