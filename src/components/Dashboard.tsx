@@ -36,11 +36,10 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     if (currentAgency || currentWorker) {
       loadOrders();
+      loadMessages();
       if (userType === 'agency') {
         loadExpenses();
         loadWorkers();
-      } else if (userType === 'worker') {
-        loadMessages();
       }
     }
   }, [currentAgency, currentWorker]);
@@ -91,7 +90,14 @@ const Dashboard: React.FC = () => {
   const loadMessages = async () => {
     if (currentWorker) {
       try {
-        const fetchedMessages = await firebaseStorage.getMessages(currentWorker.id);
+        const fetchedMessages = await firebaseStorage.getMessages(currentWorker.id, 'worker');
+        setMessages(fetchedMessages);
+      } catch (error) {
+        console.error('Error loading messages:', error);
+      }
+    } else if (currentAgency) {
+      try {
+        const fetchedMessages = await firebaseStorage.getMessages(currentAgency.id, 'agency');
         setMessages(fetchedMessages);
       } catch (error) {
         console.error('Error loading messages:', error);
@@ -170,6 +176,14 @@ const Dashboard: React.FC = () => {
   const dailyAnalysisData = getDailyAnalysisData(orders, expenses);
 
   const unreadMessageCount = messages.filter(m => !m.isRead).length;
+  const filteredUnreadMessages = messages.filter(message => {
+    if (userType === 'agency') {
+      return message.toType === 'agency' && !message.isRead;
+    } else {
+      return message.toType === 'worker' && !message.isRead;
+    }
+  });
+  const actualUnreadCount = filteredUnreadMessages.length;
   const workersForFilter = workers.map(w => ({ id: w.id, name: w.name }));
 
   if (loading) {
@@ -186,7 +200,7 @@ const Dashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header 
-        unreadMessageCount={unreadMessageCount}
+        unreadMessageCount={actualUnreadCount}
         onMessagesClick={() => setActiveTab('messages')}
       />
       
@@ -278,9 +292,9 @@ const Dashboard: React.FC = () => {
                   }`}
                 >
                   Messages
-                  {unreadMessageCount > 0 && (
+                  {actualUnreadCount > 0 && (
                     <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                      {unreadMessageCount}
+                      {actualUnreadCount}
                     </span>
                   )}
                 </button>
@@ -294,7 +308,12 @@ const Dashboard: React.FC = () => {
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
                 >
-                  Send Messages
+                  Messages
+                  {actualUnreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                      {actualUnreadCount}
+                    </span>
+                  )}
                 </button>
               )}
             </nav>

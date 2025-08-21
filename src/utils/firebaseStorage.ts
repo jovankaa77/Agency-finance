@@ -319,12 +319,20 @@ export const firebaseStorage = {
   },
 
   // Message management
-  async getMessages(workerId: string): Promise<Message[]> {
+  async getMessages(userId: string, userType: 'agency' | 'worker'): Promise<Message[]> {
     try {
-      const q = query(
-        collection(db, 'messages'), 
-        where('workerId', '==', workerId)
-      );
+      let q;
+      if (userType === 'worker') {
+        q = query(
+          collection(db, 'messages'), 
+          where('workerId', '==', userId)
+        );
+      } else {
+        q = query(
+          collection(db, 'messages'), 
+          where('agencyId', '==', userId)
+        );
+      }
       const querySnapshot = await getDocs(q);
       const messages = querySnapshot.docs.map(doc => ({
         id: doc.id,

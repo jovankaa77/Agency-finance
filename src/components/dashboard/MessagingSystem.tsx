@@ -28,48 +28,73 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (userType === 'worker' && workerId) {
-      loadMessages();
-    }
-  }, [userType, workerId]);
+    loadMessages();
+  }, [userType, workerId, agencyId]);
 
   const loadMessages = async () => {
-    if (workerId) {
-      try {
-        const fetchedMessages = await firebaseStorage.getMessages(workerId);
-        setMessages(fetchedMessages);
-      } catch (error) {
-        console.error('Error loading messages:', error);
-      }
+    try {
+      const userId = userType === 'worker' ? workerId! : agencyId;
+      const fetchedMessages = await firebaseStorage.getMessages(userId, userType);
+      setMessages(fetchedMessages);
+    } catch (error) {
+      console.error('Error loading messages:', error);
     }
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!selectedWorkerId || !messageTitle.trim() || !messageContent.trim()) {
+    if (userType === 'agency' && (!selectedWorkerId || !messageTitle.trim() || !messageContent.trim())) {
       alert('Please fill in all fields');
       return;
     }
 
-    const selectedWorker = workers.find(w => w.id === selectedWorkerId);
-    if (!selectedWorker) {
-      alert('Selected worker not found');
+    if (userType === 'worker' && (!messageTitle.trim() || !messageContent.trim())) {
+      alert('Please fill in all fields');
       return;
     }
 
     setLoading(true);
     try {
-      const message: Omit<Message, 'id'> = {
-        agencyId,
-        workerId: selectedWorkerId,
-        workerName: selectedWorker.name,
-        agencyName,
-        title: messageTitle,
-        content: messageContent,
-        isRead: false,
-        createdAt: new Date()
-      };
+      let message: Omit<Message, 'id'>;
+      
+      if (userType === 'agency') {
+        const selectedWorker = workers.find(w => w.id === selectedWorkerId);
+        if (!selectedWorker) {
+          alert('Selected worker not found');
+          return;
+        }
+        
+        message = {
+          agencyId,
+          workerId: selectedWorkerId,
+          workerName: selectedWorker.name,
+          agencyName,
+          fromType: 'agency',
+          fromName: agencyName,
+          toType: 'worker',
+          toName: selectedWorker.name,
+          title: messageTitle,
+          content: messageContent,
+          isRead: false,
+          createdAt: new Date()
+        };
+      } else {
+        message = {
+          agencyId,
+          workerId: workerId!,
+          workerName: workerName!,
+          agencyName,
+          fromType: 'worker',
+          fromName: workerName!,
+          toType: 'agency',
+          toName: agencyName,
+          title: messageTitle,
+          content: messageContent,
+          isRead: false,
+          createdAt: new Date()
+        };
+      }
 
       await firebaseStorage.sendMessage(message);
       
@@ -120,14 +145,28 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({
   };
 
   const unreadCount = messages.filter(m => !m.isRead).length;
+  
+  // Filter messages based on user type
+  const filteredMessages = messages.filter(message => {
+    if (userType === 'agency') {
+      return message.toType === 'agency';
+    } else {
+      return message.toType === 'worker';
+    }
+  });
 
   if (userType === 'agency') {
     return (
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900">Send Message to Workers</h2>
-            <p className="text-gray-600 mt-1">Communicate with your team members</p>
+            <h2 className="text-xl font-semibold text-gray-900">Messages</h2>
+            <p className="text-gray-600 mt-1">Send messages to workers and view received messages</p>
+            {filteredMessages.filter(m => !m.isRead).length > 0 && (
+              <p className="text-sm font-medium text-blue-600 mt-1">
+                {filteredMessages.filter(m => !m.isRead).length} unread messages from workers
+              </p>
+            )}
           </div>
           <button
             onClick={() => setIsModalOpen(true)}
@@ -138,35 +177,97 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({
           </button>
         </div>
 
-        {workers.length === 0 ? (
-          <div className="text-center py-8">
-            <MessageCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500">No workers found. Register workers first to send messages.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {workers.map(worker => (
-              <div key={worker.id} className="p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-medium text-gray-900">{worker.name}</h3>
-                    <p className="text-sm text-gray-500">Worker ID: {worker.id.substring(0, 8)}...</p>
+        {/* Messages from Workers */}
+        <div className="mb-8">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Messages from Workers</h3>
+          {filteredMessages.length === 0 ? (
+            <div className="text-center py-6 bg-gray-50 rounded-lg">
+              <MessageCircle className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+              <p className="text-gray-500">No messages from workers yet</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredMessages.map(message => (
+                <div
+                  key={message.id}
+                  className={`p-4 border rounded-lg transition-all ${
+                    message.isRead 
+                      ? 'border-gray-200 bg-white' 
+                      : 'border-blue-200 bg-blue-50'
+                  }`}
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h4 className={`font-medium ${message.isRead ? 'text-gray-900' : 'text-blue-900'}`}>
+                          {message.title}
+                        </h4>
+                        {!message.isRead && (
+                          <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600 mb-2">From: {message.fromName}</p>
+                      <p className="text-gray-700">{message.content}</p>
+                      <p className="text-xs text-gray-500 mt-2">{formatDate(message.createdAt)}</p>
+                    </div>
+                    <div className="flex items-center gap-2 ml-4">
+                      {!message.isRead && (
+                        <button
+                          onClick={() => handleMarkAsRead(message.id)}
+                          className="p-1 text-blue-600 hover:bg-blue-100 rounded transition-colors"
+                          title="Mark as read"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleDeleteMessage(message.id)}
+                        className="p-1 text-red-600 hover:bg-red-100 rounded transition-colors"
+                        title="Delete message"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
-                  <button
-                    onClick={() => {
-                      setSelectedWorkerId(worker.id);
-                      setIsModalOpen(true);
-                    }}
-                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                    title="Send Message"
-                  >
-                    <Send className="h-4 w-4" />
-                  </button>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Workers List */}
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Send Message to Workers</h3>
+          {workers.length === 0 ? (
+            <div className="text-center py-6 bg-gray-50 rounded-lg">
+              <MessageCircle className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+              <p className="text-gray-500">No workers found. Register workers first to send messages.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {workers.map(worker => (
+                <div key={worker.id} className="p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-medium text-gray-900">{worker.name}</h4>
+                      <p className="text-sm text-gray-500">Worker ID: {worker.id.substring(0, 8)}...</p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setSelectedWorkerId(worker.id);
+                        setIsModalOpen(true);
+                      }}
+                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      title="Send Message"
+                    >
+                      <Send className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* Send Message Modal */}
         {isModalOpen && (
@@ -190,20 +291,31 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({
               </div>
 
               <form onSubmit={handleSendMessage} className="p-6 space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Select Worker *</label>
-                  <select
-                    value={selectedWorkerId}
-                    onChange={(e) => setSelectedWorkerId(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  >
-                    <option value="">Choose a worker...</option>
-                    {workers.map(worker => (
-                      <option key={worker.id} value={worker.id}>{worker.name}</option>
-                    ))}
-                  </select>
-                </div>
+                {userType === 'agency' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Select Worker *</label>
+                    <select
+                      value={selectedWorkerId}
+                      onChange={(e) => setSelectedWorkerId(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
+                    >
+                      <option value="">Choose a worker...</option>
+                      {workers.map(worker => (
+                        <option key={worker.id} value={worker.id}>{worker.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                
+                {userType === 'worker' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">To: Agency</label>
+                    <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-700">
+                      {agencyName}
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Message Title *</label>
@@ -264,23 +376,32 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-xl font-semibold text-gray-900">Messages</h2>
-          <p className="text-gray-600 mt-1">Messages from your agency</p>
+          <p className="text-gray-600 mt-1">Send messages to agency and view received messages</p>
         </div>
-        {unreadCount > 0 && (
-          <div className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">
-            {unreadCount} unread
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          {filteredMessages.filter(m => !m.isRead).length > 0 && (
+            <div className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">
+              {filteredMessages.filter(m => !m.isRead).length} unread
+            </div>
+          )}
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white font-medium rounded-lg hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-md hover:shadow-lg"
+          >
+            <Send className="h-4 w-4 mr-2" />
+            Send to Agency
+          </button>
+        </div>
       </div>
 
-      {messages.length === 0 ? (
+      {filteredMessages.length === 0 ? (
         <div className="text-center py-8">
           <MessageCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <p className="text-gray-500">No messages yet</p>
         </div>
       ) : (
         <div className="space-y-4">
-          {messages.map(message => (
+          {filteredMessages.map(message => (
             <div
               key={message.id}
               className={`p-4 border rounded-lg transition-all ${
@@ -299,7 +420,7 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({
                       <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
                     )}
                   </div>
-                  <p className="text-sm text-gray-600 mb-2">From: {message.agencyName}</p>
+                  <p className="text-sm text-gray-600 mb-2">From: {message.fromName}</p>
                   <p className="text-gray-700">{message.content}</p>
                   <p className="text-xs text-gray-500 mt-2">{formatDate(message.createdAt)}</p>
                 </div>
@@ -326,6 +447,83 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({
           ))}
         </div>
       )}
+
+      {/* Send Message Modal for Worker */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div className="p-6 border-b border-gray-100">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">Send Message to Agency</h3>
+                <button
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    setMessageTitle('');
+                    setMessageContent('');
+                  }}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            <form onSubmit={handleSendMessage} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">To: Agency</label>
+                <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-700">
+                  {agencyName}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Message Title *</label>
+                <input
+                  type="text"
+                  value={messageTitle}
+                  onChange={(e) => setMessageTitle(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  placeholder="Enter message title"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Message Content *</label>
+                <textarea
+                  value={messageContent}
+                  onChange={(e) => setMessageContent(e.target.value)}
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+                  placeholder="Enter your message..."
+                  required
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    setMessageTitle('');
+                    setMessageContent('');
+                  }}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-all duration-200 disabled:opacity-50"
+                >
+                  {loading ? 'Sending...' : 'Send Message'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

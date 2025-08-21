@@ -68,6 +68,10 @@ export interface Message {
   workerId: string;
   workerName: string;
   agencyName: string;
+  fromType: 'agency' | 'worker';
+  fromName: string;
+  toType: 'agency' | 'worker';
+  toName: string;
   title: string;
   content: string;
   isRead: boolean;

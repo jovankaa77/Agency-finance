@@ -30,12 +30,12 @@ const Header: React.FC<HeaderProps> = ({ unreadMessageCount = 0, onMessagesClick
             <div className="text-right">
               <p className="text-sm font-medium text-gray-900">{currentUser?.name}</p>
               <p className="text-xs text-gray-500">
-                {isAgency ? `Agency Account • ID: ${currentAgency?.id}` : 'Worker Account'}
+                {isAgency ? `Agency Account` : 'Worker Account'}
               </p>
             </div>
             
-            {/* Messages button for worker */}
-            {!isAgency && onMessagesClick && (
+            {/* Messages button for both agency and worker */}
+            {onMessagesClick && (
               <button
                 onClick={onMessagesClick}
                 className="relative inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors duration-200"
