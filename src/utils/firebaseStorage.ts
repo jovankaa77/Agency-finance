@@ -11,7 +11,7 @@ import {
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../config/firebase';
-import { Agency, Order, Worker } from '../types';
+import { Agency, Order, Worker, Message } from '../types';
 
 export const firebaseStorage = {
   // Agency management
@@ -315,6 +315,59 @@ export const firebaseStorage = {
     } catch (error) {
       console.error('Error uploading file:', error);
       return null;
+    }
+  },
+
+  // Message management
+  async getMessages(workerId: string): Promise<Message[]> {
+    try {
+      const q = query(
+        collection(db, 'messages'), 
+        where('workerId', '==', workerId),
+        orderBy('createdAt', 'desc')
+      );
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Message[];
+    } catch (error) {
+      console.error('Error getting messages:', error);
+      return [];
+    }
+  },
+
+  async sendMessage(message: Omit<Message, 'id'>): Promise<string | null> {
+    try {
+      const docRef = await addDoc(collection(db, 'messages'), {
+        ...message,
+        createdAt: new Date()
+      });
+      return docRef.id;
+    } catch (error) {
+      console.error('Error sending message:', error);
+      return null;
+    }
+  },
+
+  async markMessageAsRead(messageId: string): Promise<boolean> {
+    try {
+      const messageRef = doc(db, 'messages', messageId);
+      await updateDoc(messageRef, { isRead: true });
+      return true;
+    } catch (error) {
+      console.error('Error marking message as read:', error);
+      return false;
+    }
+  },
+
+  async deleteMessage(messageId: string): Promise<boolean> {
+    try {
+      await deleteDoc(doc(db, 'messages', messageId));
+      return true;
+    } catch (error) {
+      console.error('Error deleting message:', error);
+      return false;
     }
   }
 };

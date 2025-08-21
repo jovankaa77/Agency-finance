@@ -61,3 +61,14 @@ export interface AuthContextType {
   isAuthenticated: boolean;
   loading: boolean;
 }
+
+export interface Message {
+  id: string;
+  agencyId: string;
+  workerId: string;
+  workerName: string;
+  agencyName: string;
+  title: string;
+  content: string;
+  isRead: boolean;
+  createdAt: Date;

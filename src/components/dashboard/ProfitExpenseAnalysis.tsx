@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
-import { Calendar, TrendingUp, TrendingDown, DollarSign, BarChart3, PieChart as PieChartIcon } from 'lucide-react';
+import { Calendar, TrendingUp, TrendingDown, DollarSign, BarChart3, PieChart as PieChartIcon, Users } from 'lucide-react';
 import { Order, Expense } from '../../types';
 import { 
   getWeekRevenue, 
@@ -20,18 +20,21 @@ interface ProfitExpenseAnalysisProps {
   orders: Order[];
   expenses: Expense[];
   userType: 'agency' | 'worker';
+  workers?: { id: string; name: string }[];
 }
 
 const ProfitExpenseAnalysis: React.FC<ProfitExpenseAnalysisProps> = ({ 
   orders, 
   expenses, 
-  userType 
+  userType,
+  workers = []
 }) => {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedWeek, setSelectedWeek] = useState(1);
   const [viewType, setViewType] = useState<'bar' | 'line' | 'pie'>('bar');
   const [periodType, setPeriodType] = useState<'weekly' | 'monthly' | 'yearly'>('monthly');
+  const [selectedWorker, setSelectedWorker] = useState<string>('');
 
   const formatCurrency = (value: number) => {
     return `Rp ${value.toLocaleString('id-ID')}`;
@@ -54,12 +57,20 @@ const ProfitExpenseAnalysis: React.FC<ProfitExpenseAnalysisProps> = ({
     { value: 12, label: 'December' }
   ];
 
+  // Filter orders by selected worker if agency
+  const filteredOrders = useMemo(() => {
+    if (userType === 'worker' || !selectedWorker) {
+      return orders;
+    }
+    return orders.filter(order => order.workerName === selectedWorker);
+  }, [orders, selectedWorker, userType]);
+
   // Calculate data based on period type
   const analysisData = useMemo(() => {
     if (periodType === 'yearly') {
       // Yearly data for multiple years
       return years.map(year => {
-        const yearRevenue = getYearRevenue(orders, year);
+        const yearRevenue = getYearRevenue(filteredOrders, year);
         const yearExpenses = userType === 'agency' ? getYearExpenses(expenses, year) : 0;
         const yearProfit = yearRevenue - yearExpenses;
         
@@ -73,7 +84,7 @@ const ProfitExpenseAnalysis: React.FC<ProfitExpenseAnalysisProps> = ({
     } else if (periodType === 'monthly') {
       // Monthly data for selected year
       return months.map(month => {
-        const monthRevenue = getMonthRevenue(orders, month.value - 1, selectedYear);
+        const monthRevenue = getMonthRevenue(filteredOrders, month.value - 1, selectedYear);
         const monthExpenses = userType === 'agency' ? getMonthExpenses(expenses, month.value - 1, selectedYear) : 0;
         const monthProfit = monthRevenue - monthExpenses;
         
@@ -89,7 +100,7 @@ const ProfitExpenseAnalysis: React.FC<ProfitExpenseAnalysisProps> = ({
       const weeksInMonth = getWeeksInMonth(selectedYear, selectedMonth - 1);
       return Array.from({ length: weeksInMonth }, (_, i) => {
         const weekNumber = i + 1;
-        const weekRevenue = getWeekRevenueForMonth(orders, selectedYear, selectedMonth - 1, weekNumber);
+        const weekRevenue = getWeekRevenueForMonth(filteredOrders, selectedYear, selectedMonth - 1, weekNumber);
         const weekExpenses = userType === 'agency' ? getWeekExpensesForMonth(expenses, selectedYear, selectedMonth - 1, weekNumber) : 0;
         const weekProfit = weekRevenue - weekExpenses;
         
@@ -101,7 +112,7 @@ const ProfitExpenseAnalysis: React.FC<ProfitExpenseAnalysisProps> = ({
         };
       });
     }
-  }, [orders, expenses, selectedYear, selectedMonth, periodType, userType]);
+  }, [filteredOrders, expenses, selectedYear, selectedMonth, periodType, userType]);
 
   // Calculate totals
   const totalRevenue = analysisData.reduce((sum, item) => sum + item.revenue, 0);
@@ -156,6 +167,11 @@ const ProfitExpenseAnalysis: React.FC<ProfitExpenseAnalysisProps> = ({
           <div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">
               {userType === 'agency' ? 'Profit & Expense Analysis' : 'Revenue Analysis'}
+              {selectedWorker && (
+                <span className="text-sm font-normal text-blue-600 ml-2">
+                  - {selectedWorker}
+                </span>
+              )}
             </h3>
             <p className="text-gray-600">
               {userType === 'agency' 
@@ -166,6 +182,23 @@ const ProfitExpenseAnalysis: React.FC<ProfitExpenseAnalysisProps> = ({
           </div>
           
           <div className="flex flex-wrap items-center gap-3">
+            {/* Worker Filter for Agency */}
+            {userType === 'agency' && workers.length > 0 && (
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-gray-600" />
+                <select
+                  value={selectedWorker}
+                  onChange={(e) => setSelectedWorker(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                >
+                  <option value="">All Workers</option>
+                  {workers.map(worker => (
+                    <option key={worker.id} value={worker.name}>{worker.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             {/* Period Type */}
             <div className="flex items-center gap-2">
               <label className="text-sm font-medium text-gray-700">Period:</label>

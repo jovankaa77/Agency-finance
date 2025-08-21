@@ -1,8 +1,13 @@
 import React from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { LogOut, Building2 } from 'lucide-react';
+import { LogOut, Building2, MessageCircle } from 'lucide-react';
 
-const Header: React.FC = () => {
+interface HeaderProps {
+  unreadMessageCount?: number;
+  onMessagesClick?: () => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ unreadMessageCount = 0, onMessagesClick }) => {
   const { currentAgency, currentWorker, userType, logout } = useAuth();
   
   const currentUser = currentAgency || currentWorker;
@@ -28,6 +33,23 @@ const Header: React.FC = () => {
                 {isAgency ? `Agency Account • ID: ${currentAgency?.id}` : 'Worker Account'}
               </p>
             </div>
+            
+            {/* Messages button for worker */}
+            {!isAgency && onMessagesClick && (
+              <button
+                onClick={onMessagesClick}
+                className="relative inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors duration-200"
+              >
+                <MessageCircle className="h-4 w-4 mr-2" />
+                Messages
+                {unreadMessageCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {unreadMessageCount}
+                  </span>
+                )}
+              </button>
+            )}
+            
             <button
               onClick={logout}
               className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors duration-200"

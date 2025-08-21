@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Order, Expense } from '../types';
+import { Order, Expense, Message, Worker } from '../types';
 import { firebaseStorage } from '../utils/firebaseStorage';
 import { 
   getWeekRevenue, 
@@ -21,13 +21,16 @@ import ExpenseAnalysis from './dashboard/ExpenseAnalysis';
 import DailyAnalysis from './dashboard/DailyAnalysis';
 import ProfitExpenseAnalysis from './dashboard/ProfitExpenseAnalysis';
 import Header from './dashboard/Header';
+import MessagingSystem from './dashboard/MessagingSystem';
 
 const Dashboard: React.FC = () => {
   const { currentAgency, currentWorker, userType } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [workers, setWorkers] = useState<Worker[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'orders' | 'expenses' | 'analysis' | 'profit-analysis'>('orders');
+  const [activeTab, setActiveTab] = useState<'orders' | 'expenses' | 'analysis' | 'profit-analysis' | 'messages'>('orders');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -35,6 +38,9 @@ const Dashboard: React.FC = () => {
       loadOrders();
       if (userType === 'agency') {
         loadExpenses();
+        loadWorkers();
+      } else if (userType === 'worker') {
+        loadMessages();
       }
     }
   }, [currentAgency, currentWorker]);
@@ -67,6 +73,28 @@ const Dashboard: React.FC = () => {
         setExpenses(fetchedExpenses);
       } catch (error) {
         console.error('Error loading expenses:', error);
+      }
+    }
+  };
+
+  const loadWorkers = async () => {
+    if (currentAgency) {
+      try {
+        const fetchedWorkers = await firebaseStorage.getWorkers(currentAgency.id);
+        setWorkers(fetchedWorkers);
+      } catch (error) {
+        console.error('Error loading workers:', error);
+      }
+    }
+  };
+
+  const loadMessages = async () => {
+    if (currentWorker) {
+      try {
+        const fetchedMessages = await firebaseStorage.getMessages(currentWorker.id);
+        setMessages(fetchedMessages);
+      } catch (error) {
+        console.error('Error loading messages:', error);
       }
     }
   };
@@ -141,6 +169,9 @@ const Dashboard: React.FC = () => {
   const chartData = getMonthlyRevenueData(orders);
   const dailyAnalysisData = getDailyAnalysisData(orders, expenses);
 
+  const unreadMessageCount = messages.filter(m => !m.isRead).length;
+  const workersForFilter = workers.map(w => ({ id: w.id, name: w.name }));
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -154,7 +185,10 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
+      <Header 
+        unreadMessageCount={unreadMessageCount}
+        onMessagesClick={() => setActiveTab('messages')}
+      />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Section */}
@@ -234,6 +268,35 @@ const Dashboard: React.FC = () => {
               >
                 {isAgency ? 'Profit Analysis' : 'Profit Analysis'}
               </button>
+              {!isAgency && (
+                <button
+                  onClick={() => setActiveTab('messages')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm relative ${
+                    activeTab === 'messages'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  Messages
+                  {unreadMessageCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                      {unreadMessageCount}
+                    </span>
+                  )}
+                </button>
+              )}
+              {isAgency && (
+                <button
+                  onClick={() => setActiveTab('messages')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'messages'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  Send Messages
+                </button>
+              )}
             </nav>
           </div>
         </div>
@@ -295,6 +358,19 @@ const Dashboard: React.FC = () => {
             orders={orders}
             expenses={expenses}
             userType={userType || 'agency'}
+            workers={workersForFilter}
+          />
+        )}
+
+        {/* Messages Tab */}
+        {activeTab === 'messages' && (
+          <MessagingSystem
+            userType={userType || 'agency'}
+            agencyId={currentAgency?.id || currentWorker?.agencyId || ''}
+            agencyName={currentAgency?.name || ''}
+            workerId={currentWorker?.id}
+            workerName={currentWorker?.name}
+            workers={workersForFilter}
           />
         )}
 
