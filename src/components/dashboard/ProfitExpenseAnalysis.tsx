@@ -120,7 +120,7 @@ const ProfitExpenseAnalysis: React.FC<ProfitExpenseAnalysisProps> = ({
   const totalProfit = totalRevenue - totalExpenses;
 
   // Pie chart data
-  const pieData = userType === 'agency' ? [
+  const pieData = userType === 'agency' && !selectedWorker ? [
     { name: 'Revenue', value: totalRevenue, color: '#10b981' },
     { name: 'Expenses', value: totalExpenses, color: '#ef4444' }
   ] : [
@@ -135,19 +135,19 @@ const ProfitExpenseAnalysis: React.FC<ProfitExpenseAnalysisProps> = ({
       color: 'text-green-600',
       bgColor: 'bg-green-50'
     },
-    {
+    ...(selectedWorker ? [] : [{
       title: `Total Expenses (${periodType})`,
       value: totalExpenses,
       icon: TrendingDown,
       color: 'text-red-600',
       bgColor: 'bg-red-50'
-    },
+    }]),
     {
-      title: `Net Profit (${periodType})`,
-      value: totalProfit,
+      title: selectedWorker ? `Total Revenue (${periodType})` : `Net Profit (${periodType})`,
+      value: selectedWorker ? totalRevenue : totalProfit,
       icon: DollarSign,
-      color: totalProfit >= 0 ? 'text-green-600' : 'text-red-600',
-      bgColor: totalProfit >= 0 ? 'bg-green-50' : 'bg-red-50'
+      color: selectedWorker ? 'text-green-600' : (totalProfit >= 0 ? 'text-green-600' : 'text-red-600'),
+      bgColor: selectedWorker ? 'bg-green-50' : (totalProfit >= 0 ? 'bg-green-50' : 'bg-red-50')
     }
   ] : [
     {
@@ -286,7 +286,7 @@ const ProfitExpenseAnalysis: React.FC<ProfitExpenseAnalysisProps> = ({
       </div>
 
       {/* Summary Cards */}
-      <div className={`grid ${userType === 'agency' ? 'grid-cols-1 md:grid-cols-3' : 'grid-cols-1'} gap-6`}>
+      <div className={`grid ${userType === 'agency' ? (selectedWorker ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 md:grid-cols-3') : 'grid-cols-1'} gap-6`}>
         {summaryCards.map((card, index) => {
           const Icon = card.icon;
           return (
@@ -365,7 +365,7 @@ const ProfitExpenseAnalysis: React.FC<ProfitExpenseAnalysisProps> = ({
                   }}
                 />
                 <Bar dataKey="revenue" fill="#10b981" name="revenue" radius={[2, 2, 0, 0]} />
-                {userType === 'agency' && (
+                {userType === 'agency' && !selectedWorker && (
                   <>
                     <Bar dataKey="expense" fill="#ef4444" name="expense" radius={[2, 2, 0, 0]} />
                     <Bar dataKey="profit" fill="#3b82f6" name="profit" radius={[2, 2, 0, 0]} />
@@ -405,7 +405,7 @@ const ProfitExpenseAnalysis: React.FC<ProfitExpenseAnalysisProps> = ({
                   dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
                   name="revenue"
                 />
-                {userType === 'agency' && (
+                {userType === 'agency' && !selectedWorker && (
                   <>
                     <Line 
                       type="monotone" 
@@ -440,7 +440,7 @@ const ProfitExpenseAnalysis: React.FC<ProfitExpenseAnalysisProps> = ({
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Period</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Revenue</th>
-                {userType === 'agency' && (
+                {userType === 'agency' && !selectedWorker && (
                   <>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Expenses</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Profit</th>
@@ -453,7 +453,7 @@ const ProfitExpenseAnalysis: React.FC<ProfitExpenseAnalysisProps> = ({
                 <tr key={index} className="hover:bg-gray-50">
                   <td className="px-4 py-3 text-sm font-medium text-gray-900">{item.period}</td>
                   <td className="px-4 py-3 text-sm text-green-600 font-semibold">{formatCurrency(item.revenue)}</td>
-                  {userType === 'agency' && (
+                  {userType === 'agency' && !selectedWorker && (
                     <>
                       <td className="px-4 py-3 text-sm text-red-600 font-semibold">{formatCurrency(item.expense)}</td>
                       <td className={`px-4 py-3 text-sm font-semibold ${item.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
