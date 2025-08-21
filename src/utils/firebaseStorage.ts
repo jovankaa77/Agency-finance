@@ -248,7 +248,7 @@ export const firebaseStorage = {
   },
 
   // Expense management
-  async getExpenses(agencyId: string): Promise<Expense[]> {
+  async getExpenses(agencyId: string): Promise<any[]> {
     try {
       const q = query(
         collection(db, 'expenses'), 
@@ -258,7 +258,7 @@ export const firebaseStorage = {
       const expenses = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
-      })) as Expense[];
+      })) as any[];
       
       return expenses.sort((a, b) => {
         const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt);
@@ -271,7 +271,7 @@ export const firebaseStorage = {
     }
   },
 
-  async saveExpense(expense: Omit<Expense, 'id'>): Promise<string | null> {
+  async saveExpense(expense: any): Promise<string | null> {
     try {
       const docRef = await addDoc(collection(db, 'expenses'), {
         ...expense,
@@ -284,7 +284,7 @@ export const firebaseStorage = {
     }
   },
 
-  async updateExpense(expenseId: string, updatedExpense: Partial<Expense>): Promise<boolean> {
+  async updateExpense(expenseId: string, updatedExpense: any): Promise<boolean> {
     try {
       const expenseRef = doc(db, 'expenses', expenseId);
       await updateDoc(expenseRef, updatedExpense);

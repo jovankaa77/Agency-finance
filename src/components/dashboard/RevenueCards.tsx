@@ -105,11 +105,35 @@ const RevenueCards: React.FC<RevenueCardsProps> = ({
       color: monthlyProfit >= 0 ? 'from-green-500 to-green-600' : 'from-red-500 to-red-600',
       bgColor: monthlyProfit >= 0 ? 'bg-green-50' : 'bg-red-50',
       iconColor: monthlyProfit >= 0 ? 'text-green-600' : 'text-red-600'
+    },
+    {
+      title: 'Yearly Revenue',
+      value: yearlyRevenue,
+      icon: DollarSign,
+      color: 'from-purple-500 to-pink-600',
+      bgColor: 'bg-purple-50',
+      iconColor: 'text-purple-600'
+    },
+    {
+      title: 'Yearly Expenses',
+      value: yearlyExpenses,
+      icon: TrendingDown,
+      color: 'from-red-500 to-red-600',
+      bgColor: 'bg-red-50',
+      iconColor: 'text-red-600'
+    },
+    {
+      title: 'Yearly Profit',
+      value: yearlyProfit,
+      icon: PiggyBank,
+      color: yearlyProfit >= 0 ? 'from-green-500 to-green-600' : 'from-red-500 to-red-600',
+      bgColor: yearlyProfit >= 0 ? 'bg-green-50' : 'bg-red-50',
+      iconColor: yearlyProfit >= 0 ? 'text-green-600' : 'text-red-600'
     }
   ];
 
   const cards = isAgency ? agencyCards : revenueCards;
-  const gridCols = isAgency ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6' : 'grid-cols-1 md:grid-cols-3';
+  const gridCols = isAgency ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1 md:grid-cols-3';
 
   return (
     <div className={`grid ${gridCols} gap-4 mb-8`}>
