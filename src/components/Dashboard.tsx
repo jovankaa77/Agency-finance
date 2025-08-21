@@ -187,54 +187,56 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Tab Navigation */}
-        {isAgency && (
-          <div className="mb-6">
-            <div className="border-b border-gray-200">
-              <nav className="-mb-px flex space-x-8">
-                <button
-                  onClick={() => setActiveTab('orders')}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'orders'
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  Order Management
-                </button>
-                <button
-                  onClick={() => setActiveTab('expenses')}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'expenses'
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  Expense Analysis
-                </button>
-                <button
-                  onClick={() => setActiveTab('analysis')}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'analysis'
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  Daily Analysis
-                </button>
-                <button
-                  onClick={() => setActiveTab('profit-analysis')}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'profit-analysis'
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  {isAgency ? 'Profit Analysis' : 'Revenue Analysis'}
-                </button>
-              </nav>
-            </div>
+        <div className="mb-6">
+          <div className="border-b border-gray-200">
+            <nav className="-mb-px flex space-x-8">
+              <button
+                onClick={() => setActiveTab('orders')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'orders'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Order Management
+              </button>
+              {isAgency && (
+                <>
+                  <button
+                    onClick={() => setActiveTab('expenses')}
+                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                      activeTab === 'expenses'
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    Expense Analysis
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('analysis')}
+                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                      activeTab === 'analysis'
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    Daily Analysis
+                  </button>
+                </>
+              )}
+              <button
+                onClick={() => setActiveTab('profit-analysis')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'profit-analysis'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                {isAgency ? 'Profit Analysis' : 'Profit Analysis'}
+              </button>
+            </nav>
           </div>
-        )}
+        </div>
 
         {/* Content based on active tab */}
         {(!isAgency || activeTab === 'orders') && (
