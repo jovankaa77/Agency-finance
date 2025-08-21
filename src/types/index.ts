@@ -19,6 +19,18 @@ export interface DownPayment {
   label: string;
 }
 
+export interface Expense {
+  id: string;
+  orderId: string;
+  customerName: string;
+  orderType: string;
+  date: string;
+  amount: number;
+  status: 'Proses' | 'Success';
+  agencyId: string;
+  createdAt: Date;
+}
+
 export interface Order {
   id: string;
   orderId: number;

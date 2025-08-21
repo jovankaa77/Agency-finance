@@ -1,23 +1,40 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Order } from '../types';
+import { Order, Expense } from '../types';
 import { firebaseStorage } from '../utils/firebaseStorage';
-import { getWeekRevenue, getMonthRevenue, getYearRevenue, getMonthlyRevenueData } from '../utils/calculations';
+import { 
+  getWeekRevenue, 
+  getMonthRevenue, 
+  getYearRevenue, 
+  getMonthlyRevenueData,
+  getWeekExpenses,
+  getMonthExpenses,
+  getYearExpenses,
+  calculateExpenseTotal,
+  getDailyAnalysisData
+} from '../utils/calculations';
 import RevenueCards from './dashboard/RevenueCards';
 import OrderForm from './dashboard/OrderForm';
 import OrderTable from './dashboard/OrderTable';
 import RevenueChart from './dashboard/RevenueChart';
+import ExpenseAnalysis from './dashboard/ExpenseAnalysis';
+import DailyAnalysis from './dashboard/DailyAnalysis';
 import Header from './dashboard/Header';
 
 const Dashboard: React.FC = () => {
   const { currentAgency, currentWorker, userType } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'orders' | 'expenses' | 'analysis'>('orders');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (currentAgency || currentWorker) {
       loadOrders();
+      if (userType === 'agency') {
+        loadExpenses();
+      }
     }
   }, [currentAgency, currentWorker]);
 
@@ -38,6 +55,17 @@ const Dashboard: React.FC = () => {
         console.error('Error loading orders:', error);
       } finally {
         setLoading(false);
+      }
+    }
+  };
+
+  const loadExpenses = async () => {
+    if (currentAgency) {
+      try {
+        const fetchedExpenses = await firebaseStorage.getExpenses(currentAgency.id);
+        setExpenses(fetchedExpenses);
+      } catch (error) {
+        console.error('Error loading expenses:', error);
       }
     }
   };
@@ -70,6 +98,33 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const handleExpenseSubmit = async (expense: Omit<Expense, 'id'>) => {
+    try {
+      await firebaseStorage.saveExpense(expense);
+      await loadExpenses();
+    } catch (error) {
+      console.error('Error saving expense:', error);
+    }
+  };
+
+  const handleExpenseUpdate = async (updatedExpense: Expense) => {
+    try {
+      await firebaseStorage.updateExpense(updatedExpense.id, updatedExpense);
+      await loadExpenses();
+    } catch (error) {
+      console.error('Error updating expense:', error);
+    }
+  };
+
+  const handleExpenseDelete = async (expenseId: string) => {
+    try {
+      await firebaseStorage.deleteExpense(expenseId);
+      await loadExpenses();
+    } catch (error) {
+      console.error('Error deleting expense:', error);
+    }
+  };
+
   if (!currentAgency && !currentWorker) return null;
 
   const currentUser = currentAgency || currentWorker;
@@ -78,7 +133,12 @@ const Dashboard: React.FC = () => {
   const weeklyRevenue = getWeekRevenue(orders);
   const monthlyRevenue = getMonthRevenue(orders);
   const yearlyRevenue = getYearRevenue(orders);
+  const weeklyExpenses = getWeekExpenses(expenses);
+  const monthlyExpenses = getMonthExpenses(expenses);
+  const yearlyExpenses = getYearExpenses(expenses);
+  const totalExpenses = calculateExpenseTotal(expenses);
   const chartData = getMonthlyRevenueData(orders);
+  const dailyAnalysisData = getDailyAnalysisData(orders, expenses);
 
   if (loading) {
     return (
@@ -111,6 +171,13 @@ const Dashboard: React.FC = () => {
           weeklyRevenue={weeklyRevenue}
           monthlyRevenue={monthlyRevenue}
           yearlyRevenue={yearlyRevenue}
+          weeklyExpenses={weeklyExpenses}
+          monthlyExpenses={monthlyExpenses}
+          yearlyExpenses={yearlyExpenses}
+          weeklyProfit={weeklyRevenue - weeklyExpenses}
+          monthlyProfit={monthlyRevenue - monthlyExpenses}
+          yearlyProfit={yearlyRevenue - yearlyExpenses}
+          isAgency={isAgency}
         />
 
         {/* Chart Section */}
@@ -118,7 +185,48 @@ const Dashboard: React.FC = () => {
           <RevenueChart data={chartData} />
         </div>
 
-        {/* Orders Section */}
+        {/* Tab Navigation */}
+        {isAgency && (
+          <div className="mb-6">
+            <div className="border-b border-gray-200">
+              <nav className="-mb-px flex space-x-8">
+                <button
+                  onClick={() => setActiveTab('orders')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'orders'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  Order Management
+                </button>
+                <button
+                  onClick={() => setActiveTab('expenses')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'expenses'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  Expense Analysis
+                </button>
+                <button
+                  onClick={() => setActiveTab('analysis')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'analysis'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  Daily Analysis
+                </button>
+              </nav>
+            </div>
+          </div>
+        )}
+
+        {/* Content based on active tab */}
+        {(!isAgency || activeTab === 'orders') && (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
           <div className="p-6 border-b border-gray-100">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -145,6 +253,28 @@ const Dashboard: React.FC = () => {
             userType={userType || 'agency'}
           />
         </div>
+        )}
+
+        {/* Expense Analysis Tab */}
+        {isAgency && activeTab === 'expenses' && (
+          <ExpenseAnalysis
+            expenses={expenses}
+            onExpenseSubmit={handleExpenseSubmit}
+            onExpenseUpdate={handleExpenseUpdate}
+            onExpenseDelete={handleExpenseDelete}
+            agencyId={currentAgency?.id || ''}
+            agencyName={currentAgency?.name || ''}
+          />
+        )}
+
+        {/* Daily Analysis Tab */}
+        {isAgency && activeTab === 'analysis' && (
+          <DailyAnalysis
+            data={dailyAnalysisData}
+            orders={orders}
+            expenses={expenses}
+          />
+        )}
 
         {/* Order Form Modal */}
         {isFormOpen && (

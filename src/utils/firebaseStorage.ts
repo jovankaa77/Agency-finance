@@ -247,6 +247,64 @@ export const firebaseStorage = {
     }
   },
 
+  // Expense management
+  async getExpenses(agencyId: string): Promise<Expense[]> {
+    try {
+      const q = query(
+        collection(db, 'expenses'), 
+        where('agencyId', '==', agencyId)
+      );
+      const querySnapshot = await getDocs(q);
+      const expenses = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Expense[];
+      
+      return expenses.sort((a, b) => {
+        const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt);
+        const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt);
+        return dateB.getTime() - dateA.getTime();
+      });
+    } catch (error) {
+      console.error('Error getting expenses:', error);
+      return [];
+    }
+  },
+
+  async saveExpense(expense: Omit<Expense, 'id'>): Promise<string | null> {
+    try {
+      const docRef = await addDoc(collection(db, 'expenses'), {
+        ...expense,
+        createdAt: new Date()
+      });
+      return docRef.id;
+    } catch (error) {
+      console.error('Error saving expense:', error);
+      return null;
+    }
+  },
+
+  async updateExpense(expenseId: string, updatedExpense: Partial<Expense>): Promise<boolean> {
+    try {
+      const expenseRef = doc(db, 'expenses', expenseId);
+      await updateDoc(expenseRef, updatedExpense);
+      return true;
+    } catch (error) {
+      console.error('Error updating expense:', error);
+      return false;
+    }
+  },
+
+  async deleteExpense(expenseId: string): Promise<boolean> {
+    try {
+      await deleteDoc(doc(db, 'expenses', expenseId));
+      return true;
+    } catch (error) {
+      console.error('Error deleting expense:', error);
+      return false;
+    }
+  },
+
   // File upload to Firebase Storage
   async uploadFile(file: File, path: string): Promise<string | null> {
     try {
