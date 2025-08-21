@@ -72,3 +72,4 @@ export interface Message {
   content: string;
   isRead: boolean;
   createdAt: Date;
+}
