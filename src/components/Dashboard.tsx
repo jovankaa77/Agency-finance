@@ -19,6 +19,7 @@ import OrderTable from './dashboard/OrderTable';
 import RevenueChart from './dashboard/RevenueChart';
 import ExpenseAnalysis from './dashboard/ExpenseAnalysis';
 import DailyAnalysis from './dashboard/DailyAnalysis';
+import ProfitExpenseAnalysis from './dashboard/ProfitExpenseAnalysis';
 import Header from './dashboard/Header';
 
 const Dashboard: React.FC = () => {
@@ -27,6 +28,7 @@ const Dashboard: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'orders' | 'expenses' | 'analysis'>('orders');
+  const [activeTab, setActiveTab] = useState<'orders' | 'expenses' | 'analysis' | 'profit-analysis'>('orders');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -220,6 +222,16 @@ const Dashboard: React.FC = () => {
                 >
                   Daily Analysis
                 </button>
+                <button
+                  onClick={() => setActiveTab('profit-analysis')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'profit-analysis'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  {isAgency ? 'Profit Analysis' : 'Revenue Analysis'}
+                </button>
               </nav>
             </div>
           </div>
@@ -273,6 +285,15 @@ const Dashboard: React.FC = () => {
             data={dailyAnalysisData}
             orders={orders}
             expenses={expenses}
+          />
+        )}
+
+        {/* Profit/Revenue Analysis Tab */}
+        {activeTab === 'profit-analysis' && (
+          <ProfitExpenseAnalysis
+            orders={orders}
+            expenses={expenses}
+            userType={userType || 'agency'}
           />
         )}
 
