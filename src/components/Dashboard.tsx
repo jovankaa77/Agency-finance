@@ -215,25 +215,6 @@ const Dashboard: React.FC = () => {
           </p>
         </div>
 
-        {/* Revenue Cards */}
-        <RevenueCards 
-          weeklyRevenue={weeklyRevenue}
-          monthlyRevenue={monthlyRevenue}
-          yearlyRevenue={yearlyRevenue}
-          weeklyExpenses={weeklyExpenses}
-          monthlyExpenses={monthlyExpenses}
-          yearlyExpenses={yearlyExpenses}
-          weeklyProfit={weeklyRevenue - weeklyExpenses}
-          monthlyProfit={monthlyRevenue - monthlyExpenses}
-          yearlyProfit={yearlyRevenue - yearlyExpenses}
-          isAgency={isAgency}
-        />
-
-        {/* Chart Section */}
-        <div className="mb-8">
-          <RevenueChart data={chartData} />
-        </div>
-
         {/* Profit Analysis Section */}
         <div className="mb-8">
           <ProfitExpenseAnalysis
