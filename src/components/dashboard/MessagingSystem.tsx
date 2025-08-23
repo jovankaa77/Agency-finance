@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Send, MessageCircle, X, Trash2, Eye, EyeOff } from 'lucide-react';
-import { Message } from '../../types';
-import { firebaseStorage } from '../../utils/firebaseStorage';
+import React, { useState, useEffect } from "react";
+import { Send, MessageCircle, X, Trash2, Eye, EyeOff } from "lucide-react";
+import { Message } from "../../types";
+import { firebaseStorage } from "../../utils/firebaseStorage";
 
 interface MessagingSystemProps {
-  userType: 'agency' | 'worker';
+  userType: "agency" | "worker";
   agencyId: string;
   agencyName: string;
   workerId?: string;
@@ -18,14 +18,14 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({
   agencyName,
   workerId,
   workerName,
-  workers = []
+  workers = [],
 }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [sentMessages, setSentMessages] = useState<Message[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedWorkerId, setSelectedWorkerId] = useState('');
-  const [messageTitle, setMessageTitle] = useState('');
-  const [messageContent, setMessageContent] = useState('');
+  const [selectedWorkerId, setSelectedWorkerId] = useState("");
+  const [messageTitle, setMessageTitle] = useState("");
+  const [messageContent, setMessageContent] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -35,61 +35,73 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({
 
   const loadMessages = async () => {
     try {
-      const userId = userType === 'worker' ? workerId! : agencyId;
-      const fetchedMessages = await firebaseStorage.getMessages(userId, userType);
+      const userId = userType === "worker" ? workerId! : agencyId;
+      const fetchedMessages = await firebaseStorage.getMessages(
+        userId,
+        userType
+      );
       setMessages(fetchedMessages);
     } catch (error) {
-      console.error('Error loading messages:', error);
+      console.error("Error loading messages:", error);
     }
   };
 
   const loadSentMessages = async () => {
     try {
-      const userId = userType === 'worker' ? workerId! : agencyId;
-      const fetchedSentMessages = await firebaseStorage.getSentMessages(userId, userType);
+      const userId = userType === "worker" ? workerId! : agencyId;
+      const fetchedSentMessages = await firebaseStorage.getSentMessages(
+        userId,
+        userType
+      );
       setSentMessages(fetchedSentMessages);
     } catch (error) {
-      console.error('Error loading sent messages:', error);
+      console.error("Error loading sent messages:", error);
     }
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (userType === 'agency' && (!selectedWorkerId || !messageTitle.trim() || !messageContent.trim())) {
-      alert('Please fill in all fields');
+
+    if (
+      userType === "agency" &&
+      (!selectedWorkerId || !messageTitle.trim() || !messageContent.trim())
+    ) {
+      alert("Please fill in all fields");
       return;
     }
 
-    if (userType === 'worker' && (!messageTitle.trim() || !messageContent.trim())) {
-      alert('Please fill in all fields');
+    if (
+      userType === "worker" &&
+      (!messageTitle.trim() || !messageContent.trim())
+    ) {
+      alert("Please fill in all fields");
       return;
     }
 
     setLoading(true);
     try {
-      let message: Omit<Message, 'id'>;
-      
-      if (userType === 'agency') {
-        const selectedWorker = workers.find(w => w.id === selectedWorkerId);
+      let message: Omit<Message, "id">;
+
+      if (userType === "agency") {
+        const selectedWorker = workers.find((w) => w.id === selectedWorkerId);
         if (!selectedWorker) {
-          alert('Selected worker not found');
+          alert("Selected worker not found");
           return;
         }
-        
+
         message = {
           agencyId,
           workerId: selectedWorkerId,
           workerName: selectedWorker.name,
           agencyName,
-          fromType: 'agency',
+          fromType: "agency",
           fromName: agencyName,
-          toType: 'worker',
+          toType: "worker",
           toName: selectedWorker.name,
           title: messageTitle,
           content: messageContent,
           isRead: false,
-          createdAt: new Date()
+          createdAt: new Date(),
         };
       } else {
         message = {
@@ -97,31 +109,31 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({
           workerId: workerId!,
           workerName: workerName!,
           agencyName,
-          fromType: 'worker',
+          fromType: "worker",
           fromName: workerName!,
-          toType: 'agency',
+          toType: "agency",
           toName: agencyName,
           title: messageTitle,
           content: messageContent,
           isRead: false,
-          createdAt: new Date()
+          createdAt: new Date(),
         };
       }
 
       await firebaseStorage.sendMessage(message);
-      
+
       // Reset form
-      setSelectedWorkerId('');
-      setMessageTitle('');
-      setMessageContent('');
+      setSelectedWorkerId("");
+      setMessageTitle("");
+      setMessageContent("");
       setIsModalOpen(false);
-      
+
       // Reload both received and sent messages
       await loadSentMessages();
-      alert('Message sent successfully!');
+      alert("Message sent successfully!");
     } catch (error) {
-      console.error('Error sending message:', error);
-      alert('Failed to send message. Please try again.');
+      console.error("Error sending message:", error);
+      alert("Failed to send message. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -132,53 +144,56 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({
       await firebaseStorage.markMessageAsRead(messageId);
       await loadMessages();
     } catch (error) {
-      console.error('Error marking message as read:', error);
+      console.error("Error marking message as read:", error);
     }
   };
 
   const handleDeleteMessage = async (messageId: string) => {
-    if (window.confirm('Are you sure you want to delete this message?')) {
+    if (window.confirm("Are you sure you want to delete this message?")) {
       try {
         await firebaseStorage.deleteMessage(messageId);
         await loadMessages();
       } catch (error) {
-        console.error('Error deleting message:', error);
+        console.error("Error deleting message:", error);
       }
     }
   };
 
   const formatDate = (date: Date | any) => {
     const messageDate = date?.toDate ? date.toDate() : new Date(date);
-    return messageDate.toLocaleDateString('id-ID', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    return messageDate.toLocaleDateString("id-ID", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
-  const unreadCount = messages.filter(m => !m.isRead).length;
-  
+  const unreadCount = messages.filter((m) => !m.isRead).length;
+
   // Filter messages based on user type
-  const filteredMessages = messages.filter(message => {
-    if (userType === 'agency') {
-      return message.toType === 'agency';
+  const filteredMessages = messages.filter((message) => {
+    if (userType === "agency") {
+      return message.toType === "agency";
     } else {
-      return message.toType === 'worker';
+      return message.toType === "worker";
     }
   });
 
-  if (userType === 'agency') {
+  if (userType === "agency") {
     return (
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-xl font-semibold text-gray-900">Messages</h2>
-            <p className="text-gray-600 mt-1">Send messages to workers and view received messages</p>
-            {filteredMessages.filter(m => !m.isRead).length > 0 && (
+            <p className="text-gray-600 mt-1">
+              Send messages to workers and view received messages
+            </p>
+            {filteredMessages.filter((m) => !m.isRead).length > 0 && (
               <p className="text-sm font-medium text-blue-600 mt-1">
-                {filteredMessages.filter(m => !m.isRead).length} unread messages from workers
+                {filteredMessages.filter((m) => !m.isRead).length} unread
+                messages from workers
               </p>
             )}
           </div>
@@ -193,7 +208,9 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({
 
         {/* Messages from Workers */}
         <div className="mb-8">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Messages from Workers</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Messages from Workers
+          </h3>
           {filteredMessages.length === 0 ? (
             <div className="text-center py-6 bg-gray-50 rounded-lg">
               <MessageCircle className="h-8 w-8 text-gray-400 mx-auto mb-2" />
@@ -201,28 +218,36 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({
             </div>
           ) : (
             <div className="space-y-4">
-              {filteredMessages.map(message => (
+              {filteredMessages.map((message) => (
                 <div
                   key={message.id}
                   className={`p-4 border rounded-lg transition-all ${
-                    message.isRead 
-                      ? 'border-gray-200 bg-white' 
-                      : 'border-blue-200 bg-blue-50'
+                    message.isRead
+                      ? "border-gray-200 bg-white"
+                      : "border-blue-200 bg-blue-50"
                   }`}
                 >
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <h4 className={`font-medium ${message.isRead ? 'text-gray-900' : 'text-blue-900'}`}>
+                        <h4
+                          className={`font-medium ${
+                            message.isRead ? "text-gray-900" : "text-blue-900"
+                          }`}
+                        >
                           {message.title}
                         </h4>
                         {!message.isRead && (
                           <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
                         )}
                       </div>
-                      <p className="text-sm text-gray-600 mb-2">From: {message.fromName}</p>
+                      <p className="text-sm text-gray-600 mb-2">
+                        From: {message.fromName}
+                      </p>
                       <p className="text-gray-700">{message.content}</p>
-                      <p className="text-xs text-gray-500 mt-2">{formatDate(message.createdAt)}</p>
+                      <p className="text-xs text-gray-500 mt-2">
+                        {formatDate(message.createdAt)}
+                      </p>
                     </div>
                     <div className="flex items-center gap-2 ml-4">
                       {!message.isRead && (
@@ -251,7 +276,9 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({
 
         {/* Sent Messages History */}
         <div className="mb-8">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Sent Messages History</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Sent Messages History
+          </h3>
           {sentMessages.length === 0 ? (
             <div className="text-center py-6 bg-gray-50 rounded-lg">
               <MessageCircle className="h-8 w-8 text-gray-400 mx-auto mb-2" />
@@ -259,7 +286,7 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({
             </div>
           ) : (
             <div className="space-y-4">
-              {sentMessages.map(message => (
+              {sentMessages.map((message) => (
                 <div
                   key={message.id}
                   className="p-4 border border-green-200 bg-green-50 rounded-lg"
@@ -267,14 +294,20 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <h4 className="font-medium text-green-900">{message.title}</h4>
+                        <h4 className="font-medium text-green-900">
+                          {message.title}
+                        </h4>
                         <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
-                          {message.isRead ? 'Read' : 'Unread'}
+                          {message.isRead ? "Read" : "Unread"}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-600 mb-2">To: {message.toName}</p>
+                      <p className="text-sm text-gray-600 mb-2">
+                        To: {message.toName}
+                      </p>
                       <p className="text-gray-700">{message.content}</p>
-                      <p className="text-xs text-gray-500 mt-2">{formatDate(message.createdAt)}</p>
+                      <p className="text-xs text-gray-500 mt-2">
+                        {formatDate(message.createdAt)}
+                      </p>
                     </div>
                     <div className="flex items-center gap-2 ml-4">
                       <button
@@ -293,20 +326,31 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({
         </div>
         {/* Workers List */}
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Send Message to Workers</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Send Message to Workers
+          </h3>
           {workers.length === 0 ? (
             <div className="text-center py-6 bg-gray-50 rounded-lg">
               <MessageCircle className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-              <p className="text-gray-500">No workers found. Register workers first to send messages.</p>
+              <p className="text-gray-500">
+                No workers found. Register workers first to send messages.
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {workers.map(worker => (
-                <div key={worker.id} className="p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
+              {workers.map((worker) => (
+                <div
+                  key={worker.id}
+                  className="p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
+                >
                   <div className="flex items-center justify-between">
                     <div>
-                      <h4 className="font-medium text-gray-900">{worker.name}</h4>
-                      <p className="text-sm text-gray-500">Worker ID: {worker.id.substring(0, 8)}...</p>
+                      <h4 className="font-medium text-gray-900">
+                        {worker.name}
+                      </h4>
+                      <p className="text-sm text-gray-500">
+                        Worker ID: {worker.id.substring(0, 8)}...
+                      </p>
                     </div>
                     <button
                       onClick={() => {
@@ -331,13 +375,15 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
               <div className="p-6 border-b border-gray-100">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-gray-900">Send Message</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Send Message
+                  </h3>
                   <button
                     onClick={() => {
                       setIsModalOpen(false);
-                      setSelectedWorkerId('');
-                      setMessageTitle('');
-                      setMessageContent('');
+                      setSelectedWorkerId("");
+                      setMessageTitle("");
+                      setMessageContent("");
                     }}
                     className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                   >
@@ -347,9 +393,11 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({
               </div>
 
               <form onSubmit={handleSendMessage} className="p-6 space-y-4">
-                {userType === 'agency' && (
+                {userType === "agency" && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Select Worker *</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Select Worker *
+                    </label>
                     <select
                       value={selectedWorkerId}
                       onChange={(e) => setSelectedWorkerId(e.target.value)}
@@ -357,16 +405,20 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({
                       required
                     >
                       <option value="">Choose a worker...</option>
-                      {workers.map(worker => (
-                        <option key={worker.id} value={worker.id}>{worker.name}</option>
+                      {workers.map((worker) => (
+                        <option key={worker.id} value={worker.id}>
+                          {worker.name}
+                        </option>
                       ))}
                     </select>
                   </div>
                 )}
-                
-                {userType === 'worker' && (
+
+                {userType === "worker" && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">To: Agency</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      To: Agency
+                    </label>
                     <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-700">
                       {agencyName}
                     </div>
@@ -374,7 +426,9 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({
                 )}
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Message Title *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Message Title *
+                  </label>
                   <input
                     type="text"
                     value={messageTitle}
@@ -386,7 +440,9 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Message Content *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Message Content *
+                  </label>
                   <textarea
                     value={messageContent}
                     onChange={(e) => setMessageContent(e.target.value)}
@@ -402,9 +458,9 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({
                     type="button"
                     onClick={() => {
                       setIsModalOpen(false);
-                      setSelectedWorkerId('');
-                      setMessageTitle('');
-                      setMessageContent('');
+                      setSelectedWorkerId("");
+                      setMessageTitle("");
+                      setMessageContent("");
                     }}
                     className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                   >
@@ -415,7 +471,7 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({
                     disabled={loading}
                     className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 disabled:opacity-50"
                   >
-                    {loading ? 'Sending...' : 'Send Message'}
+                    {loading ? "Sending..." : "Send Message"}
                   </button>
                 </div>
               </form>
@@ -432,12 +488,14 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-xl font-semibold text-gray-900">Messages</h2>
-          <p className="text-gray-600 mt-1">Send messages to agency and view received messages</p>
+          <p className="text-gray-600 mt-1">
+            Send messages to agency and view received messages
+          </p>
         </div>
         <div className="flex items-center gap-3">
-          {filteredMessages.filter(m => !m.isRead).length > 0 && (
+          {filteredMessages.filter((m) => !m.isRead).length > 0 && (
             <div className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">
-              {filteredMessages.filter(m => !m.isRead).length} unread
+              {filteredMessages.filter((m) => !m.isRead).length} unread
             </div>
           )}
           <button
@@ -452,7 +510,9 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({
 
       {/* Messages from Agency */}
       <div className="mb-8">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Messages from Agency</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          Messages from Agency
+        </h3>
         {filteredMessages.length === 0 ? (
           <div className="text-center py-6 bg-gray-50 rounded-lg">
             <MessageCircle className="h-8 w-8 text-gray-400 mx-auto mb-2" />
@@ -460,28 +520,36 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({
           </div>
         ) : (
           <div className="space-y-4">
-            {filteredMessages.map(message => (
+            {filteredMessages.map((message) => (
               <div
                 key={message.id}
                 className={`p-4 border rounded-lg transition-all ${
-                  message.isRead 
-                    ? 'border-gray-200 bg-white' 
-                    : 'border-blue-200 bg-blue-50'
+                  message.isRead
+                    ? "border-gray-200 bg-white"
+                    : "border-blue-200 bg-blue-50"
                 }`}
               >
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <h3 className={`font-medium ${message.isRead ? 'text-gray-900' : 'text-blue-900'}`}>
+                      <h3
+                        className={`font-medium ${
+                          message.isRead ? "text-gray-900" : "text-blue-900"
+                        }`}
+                      >
                         {message.title}
                       </h3>
                       {!message.isRead && (
                         <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
                       )}
                     </div>
-                    <p className="text-sm text-gray-600 mb-2">From: {message.fromName}</p>
+                    <p className="text-sm text-gray-600 mb-2">
+                      From: {message.fromName}
+                    </p>
                     <p className="text-gray-700">{message.content}</p>
-                    <p className="text-xs text-gray-500 mt-2">{formatDate(message.createdAt)}</p>
+                    <p className="text-xs text-gray-500 mt-2">
+                      {formatDate(message.createdAt)}
+                    </p>
                   </div>
                   <div className="flex items-center gap-2 ml-4">
                     {!message.isRead && (
@@ -510,7 +578,9 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({
 
       {/* Sent Messages History */}
       <div className="mb-8">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Sent Messages History</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          Sent Messages History
+        </h3>
         {sentMessages.length === 0 ? (
           <div className="text-center py-6 bg-gray-50 rounded-lg">
             <MessageCircle className="h-8 w-8 text-gray-400 mx-auto mb-2" />
@@ -518,7 +588,7 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({
           </div>
         ) : (
           <div className="space-y-4">
-            {sentMessages.map(message => (
+            {sentMessages.map((message) => (
               <div
                 key={message.id}
                 className="p-4 border border-green-200 bg-green-50 rounded-lg"
@@ -526,14 +596,20 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-medium text-green-900">{message.title}</h3>
+                      <h3 className="font-medium text-green-900">
+                        {message.title}
+                      </h3>
                       <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
-                        {message.isRead ? 'Read' : 'Unread'}
+                        {message.isRead ? "Read" : "Unread"}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-600 mb-2">To: {message.toName}</p>
+                    <p className="text-sm text-gray-600 mb-2">
+                      To: {message.toName}
+                    </p>
                     <p className="text-gray-700">{message.content}</p>
-                    <p className="text-xs text-gray-500 mt-2">{formatDate(message.createdAt)}</p>
+                    <p className="text-xs text-gray-500 mt-2">
+                      {formatDate(message.createdAt)}
+                    </p>
                   </div>
                   <div className="flex items-center gap-2 ml-4">
                     <button
@@ -557,12 +633,14 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
             <div className="p-6 border-b border-gray-100">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900">Send Message to Agency</h3>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Send Message to Agency
+                </h3>
                 <button
                   onClick={() => {
                     setIsModalOpen(false);
-                    setMessageTitle('');
-                    setMessageContent('');
+                    setMessageTitle("");
+                    setMessageContent("");
                   }}
                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 >
@@ -573,14 +651,18 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({
 
             <form onSubmit={handleSendMessage} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">To: Agency</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  To: Agency
+                </label>
                 <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-700">
                   {agencyName}
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Message Title *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Message Title *
+                </label>
                 <input
                   type="text"
                   value={messageTitle}
@@ -592,7 +674,9 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Message Content *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Message Content *
+                </label>
                 <textarea
                   value={messageContent}
                   onChange={(e) => setMessageContent(e.target.value)}
@@ -608,8 +692,8 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({
                   type="button"
                   onClick={() => {
                     setIsModalOpen(false);
-                    setMessageTitle('');
-                    setMessageContent('');
+                    setMessageTitle("");
+                    setMessageContent("");
                   }}
                   className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                 >
@@ -620,7 +704,7 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({
                   disabled={loading}
                   className="px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-all duration-200 disabled:opacity-50"
                 >
-                  {loading ? 'Sending...' : 'Send Message'}
+                  {loading ? "Sending..." : "Send Message"}
                 </button>
               </div>
             </form>

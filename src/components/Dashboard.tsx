@@ -1,28 +1,28 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { Order, Expense, Message, Worker } from '../types';
-import { firebaseStorage } from '../utils/firebaseStorage';
-import { 
-  getWeekRevenue, 
-  getMonthRevenue, 
-  getYearRevenue, 
+import React, { useState, useEffect } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import { Order, Expense, Message, Worker } from "../types";
+import { firebaseStorage } from "../utils/firebaseStorage";
+import {
+  getWeekRevenue,
+  getMonthRevenue,
+  getYearRevenue,
   getMonthlyRevenueData,
   getWeekExpenses,
   getMonthExpenses,
   getYearExpenses,
   calculateExpenseTotal,
-  getDailyAnalysisData
-} from '../utils/calculations';
-import RevenueCards from './dashboard/RevenueCards';
-import OrderForm from './dashboard/OrderForm';
-import OrderTable from './dashboard/OrderTable';
-import RevenueChart from './dashboard/RevenueChart';
-import ExpenseAnalysis from './dashboard/ExpenseAnalysis';
-import DailyAnalysis from './dashboard/DailyAnalysis';
-import ProfitExpenseAnalysis from './dashboard/ProfitExpenseAnalysis';
-import Header from './dashboard/Header';
-import MessagingSystem from './dashboard/MessagingSystem';
-import WorkerManagement from './dashboard/WorkerManagement';
+  getDailyAnalysisData,
+} from "../utils/calculations";
+import RevenueCards from "./dashboard/RevenueCards";
+import OrderForm from "./dashboard/OrderForm";
+import OrderTable from "./dashboard/OrderTable";
+import RevenueChart from "./dashboard/RevenueChart";
+import ExpenseAnalysis from "./dashboard/ExpenseAnalysis";
+import DailyAnalysis from "./dashboard/DailyAnalysis";
+import ProfitExpenseAnalysis from "./dashboard/ProfitExpenseAnalysis";
+import Header from "./dashboard/Header";
+import MessagingSystem from "./dashboard/MessagingSystem";
+import WorkerManagement from "./dashboard/WorkerManagement";
 
 const Dashboard: React.FC = () => {
   const { currentAgency, currentWorker, userType } = useAuth();
@@ -31,14 +31,16 @@ const Dashboard: React.FC = () => {
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'orders' | 'workers' | 'expenses' | 'analysis' | 'messages'>('orders');
+  const [activeTab, setActiveTab] = useState<
+    "orders" | "workers" | "expenses" | "analysis" | "messages"
+  >("orders");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (currentAgency || currentWorker) {
       loadOrders();
       loadMessages();
-      if (userType === 'agency') {
+      if (userType === "agency") {
         loadExpenses();
         loadWorkers();
       }
@@ -50,16 +52,18 @@ const Dashboard: React.FC = () => {
       setLoading(true);
       try {
         let fetchedOrders: Order[];
-        if (userType === 'agency' && currentAgency) {
+        if (userType === "agency" && currentAgency) {
           fetchedOrders = await firebaseStorage.getOrders(currentAgency.id);
-        } else if (userType === 'worker' && currentWorker) {
-          fetchedOrders = await firebaseStorage.getOrdersByWorker(currentWorker.id);
+        } else if (userType === "worker" && currentWorker) {
+          fetchedOrders = await firebaseStorage.getOrdersByWorker(
+            currentWorker.id
+          );
         } else {
           fetchedOrders = [];
         }
         setOrders(fetchedOrders);
       } catch (error) {
-        console.error('Error loading orders:', error);
+        console.error("Error loading orders:", error);
       } finally {
         setLoading(false);
       }
@@ -69,10 +73,12 @@ const Dashboard: React.FC = () => {
   const loadExpenses = async () => {
     if (currentAgency) {
       try {
-        const fetchedExpenses = await firebaseStorage.getExpenses(currentAgency.id);
+        const fetchedExpenses = await firebaseStorage.getExpenses(
+          currentAgency.id
+        );
         setExpenses(fetchedExpenses);
       } catch (error) {
-        console.error('Error loading expenses:', error);
+        console.error("Error loading expenses:", error);
       }
     }
   };
@@ -80,10 +86,12 @@ const Dashboard: React.FC = () => {
   const loadWorkers = async () => {
     if (currentAgency) {
       try {
-        const fetchedWorkers = await firebaseStorage.getWorkers(currentAgency.id);
+        const fetchedWorkers = await firebaseStorage.getWorkers(
+          currentAgency.id
+        );
         setWorkers(fetchedWorkers);
       } catch (error) {
-        console.error('Error loading workers:', error);
+        console.error("Error loading workers:", error);
       }
     }
   };
@@ -91,28 +99,34 @@ const Dashboard: React.FC = () => {
   const loadMessages = async () => {
     if (currentWorker) {
       try {
-        const fetchedMessages = await firebaseStorage.getMessages(currentWorker.id, 'worker');
+        const fetchedMessages = await firebaseStorage.getMessages(
+          currentWorker.id,
+          "worker"
+        );
         setMessages(fetchedMessages);
       } catch (error) {
-        console.error('Error loading messages:', error);
+        console.error("Error loading messages:", error);
       }
     } else if (currentAgency) {
       try {
-        const fetchedMessages = await firebaseStorage.getMessages(currentAgency.id, 'agency');
+        const fetchedMessages = await firebaseStorage.getMessages(
+          currentAgency.id,
+          "agency"
+        );
         setMessages(fetchedMessages);
       } catch (error) {
-        console.error('Error loading messages:', error);
+        console.error("Error loading messages:", error);
       }
     }
   };
 
-  const handleOrderSubmit = async (order: Omit<Order, 'id'>) => {
+  const handleOrderSubmit = async (order: Omit<Order, "id">) => {
     try {
       await firebaseStorage.saveOrder(order);
       await loadOrders();
       setIsFormOpen(false);
     } catch (error) {
-      console.error('Error saving order:', error);
+      console.error("Error saving order:", error);
     }
   };
 
@@ -121,7 +135,7 @@ const Dashboard: React.FC = () => {
       await firebaseStorage.updateOrder(updatedOrder.id, updatedOrder);
       await loadOrders();
     } catch (error) {
-      console.error('Error updating order:', error);
+      console.error("Error updating order:", error);
     }
   };
 
@@ -130,16 +144,16 @@ const Dashboard: React.FC = () => {
       await firebaseStorage.deleteOrder(orderId);
       await loadOrders();
     } catch (error) {
-      console.error('Error deleting order:', error);
+      console.error("Error deleting order:", error);
     }
   };
 
-  const handleExpenseSubmit = async (expense: Omit<Expense, 'id'>) => {
+  const handleExpenseSubmit = async (expense: Omit<Expense, "id">) => {
     try {
       await firebaseStorage.saveExpense(expense);
       await loadExpenses();
     } catch (error) {
-      console.error('Error saving expense:', error);
+      console.error("Error saving expense:", error);
     }
   };
 
@@ -148,7 +162,7 @@ const Dashboard: React.FC = () => {
       await firebaseStorage.updateExpense(updatedExpense.id, updatedExpense);
       await loadExpenses();
     } catch (error) {
-      console.error('Error updating expense:', error);
+      console.error("Error updating expense:", error);
     }
   };
 
@@ -157,15 +171,15 @@ const Dashboard: React.FC = () => {
       await firebaseStorage.deleteExpense(expenseId);
       await loadExpenses();
     } catch (error) {
-      console.error('Error deleting expense:', error);
+      console.error("Error deleting expense:", error);
     }
   };
 
   if (!currentAgency && !currentWorker) return null;
 
   const currentUser = currentAgency || currentWorker;
-  const isAgency = userType === 'agency';
-  
+  const isAgency = userType === "agency";
+
   const weeklyRevenue = getWeekRevenue(orders);
   const monthlyRevenue = getMonthRevenue(orders);
   const yearlyRevenue = getYearRevenue(orders);
@@ -176,16 +190,16 @@ const Dashboard: React.FC = () => {
   const chartData = getMonthlyRevenueData(orders);
   const dailyAnalysisData = getDailyAnalysisData(orders, expenses);
 
-  const unreadMessageCount = messages.filter(m => !m.isRead).length;
-  const filteredUnreadMessages = messages.filter(message => {
-    if (userType === 'agency') {
-      return message.toType === 'agency' && !message.isRead;
+  const unreadMessageCount = messages.filter((m) => !m.isRead).length;
+  const filteredUnreadMessages = messages.filter((message) => {
+    if (userType === "agency") {
+      return message.toType === "agency" && !message.isRead;
     } else {
-      return message.toType === 'worker' && !message.isRead;
+      return message.toType === "worker" && !message.isRead;
     }
   });
   const actualUnreadCount = filteredUnreadMessages.length;
-  const workersForFilter = workers.map(w => ({ id: w.id, name: w.name }));
+  const workersForFilter = workers.map((w) => ({ id: w.id, name: w.name }));
 
   if (loading) {
     return (
@@ -200,11 +214,11 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header 
+      <Header
         unreadMessageCount={actualUnreadCount}
-        onMessagesClick={() => setActiveTab('messages')}
+        onMessagesClick={() => setActiveTab("messages")}
       />
-      
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Section */}
         <div className="mb-8">
@@ -212,7 +226,9 @@ const Dashboard: React.FC = () => {
             Welcome back, {currentUser?.name}
           </h1>
           <p className="text-gray-600">
-            {isAgency ? "Here's your agency's financial overview and recent activity" : "Here's your work overview and recent activity"}
+            {isAgency
+              ? "Here's your agency's financial overview and recent activity"
+              : "Here's your work overview and recent activity"}
           </p>
         </div>
 
@@ -221,7 +237,7 @@ const Dashboard: React.FC = () => {
           <ProfitExpenseAnalysis
             orders={orders}
             expenses={expenses}
-            userType={userType || 'agency'}
+            userType={userType || "agency"}
             workers={workersForFilter}
           />
         </div>
@@ -231,11 +247,11 @@ const Dashboard: React.FC = () => {
           <div className="border-b border-gray-200">
             <nav className="-mb-px flex space-x-8">
               <button
-                onClick={() => setActiveTab('orders')}
+                onClick={() => setActiveTab("orders")}
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'orders'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  activeTab === "orders"
+                    ? "border-blue-500 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                 }`}
               >
                 Order Management
@@ -243,31 +259,31 @@ const Dashboard: React.FC = () => {
               {isAgency && (
                 <>
                   <button
-                    onClick={() => setActiveTab('workers')}
+                    onClick={() => setActiveTab("workers")}
                     className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === 'workers'
-                        ? 'border-blue-500 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      activeTab === "workers"
+                        ? "border-blue-500 text-blue-600"
+                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                     }`}
                   >
                     Worker Management
                   </button>
                   <button
-                    onClick={() => setActiveTab('expenses')}
+                    onClick={() => setActiveTab("expenses")}
                     className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === 'expenses'
-                        ? 'border-blue-500 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      activeTab === "expenses"
+                        ? "border-blue-500 text-blue-600"
+                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                     }`}
                   >
                     Expense Analysis
                   </button>
                   <button
-                    onClick={() => setActiveTab('analysis')}
+                    onClick={() => setActiveTab("analysis")}
                     className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === 'analysis'
-                        ? 'border-blue-500 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      activeTab === "analysis"
+                        ? "border-blue-500 text-blue-600"
+                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                     }`}
                   >
                     Daily Analysis
@@ -276,11 +292,11 @@ const Dashboard: React.FC = () => {
               )}
               {!isAgency && (
                 <button
-                  onClick={() => setActiveTab('messages')}
+                  onClick={() => setActiveTab("messages")}
                   className={`py-2 px-1 border-b-2 font-medium text-sm relative ${
-                    activeTab === 'messages'
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    activeTab === "messages"
+                      ? "border-blue-500 text-blue-600"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                   }`}
                 >
                   Messages
@@ -293,11 +309,11 @@ const Dashboard: React.FC = () => {
               )}
               {isAgency && (
                 <button
-                  onClick={() => setActiveTab('messages')}
+                  onClick={() => setActiveTab("messages")}
                   className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'messages'
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    activeTab === "messages"
+                      ? "border-blue-500 text-blue-600"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                   }`}
                 >
                   Messages
@@ -313,57 +329,61 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Content based on active tab */}
-        {(!isAgency || activeTab === 'orders') && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
-          <div className="p-6 border-b border-gray-100">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900">Order Management</h2>
-                <p className="text-gray-600 mt-1">
-                  {isAgency ? 'Track and manage all agency orders' : 'Track and manage your orders'}
-                </p>
+        {(!isAgency || activeTab === "orders") && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
+            <div className="p-6 border-b border-gray-100">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    Order Management
+                  </h2>
+                  <p className="text-gray-600 mt-1">
+                    {isAgency
+                      ? "Track and manage all agency orders"
+                      : "Track and manage your orders"}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setIsFormOpen(true)}
+                  className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-md hover:shadow-lg"
+                >
+                  + Add New Order
+                </button>
               </div>
-              <button
-                onClick={() => setIsFormOpen(true)}
-                className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-md hover:shadow-lg"
-              >
-                + Add New Order
-              </button>
             </div>
-          </div>
 
-          <OrderTable 
-            orders={orders}
-            onOrderUpdate={handleOrderUpdate}
-            onOrderDelete={handleOrderDelete}
-            agencyName={currentUser?.name || ''}
-            userType={userType || 'agency'}
-          />
-        </div>
+            <OrderTable
+              orders={orders}
+              onOrderUpdate={handleOrderUpdate}
+              onOrderDelete={handleOrderDelete}
+              agencyName={currentUser?.name || ""}
+              userType={userType || "agency"}
+            />
+          </div>
         )}
 
         {/* Worker Management Tab */}
-        {isAgency && activeTab === 'workers' && (
+        {isAgency && activeTab === "workers" && (
           <WorkerManagement
-            agencyId={currentAgency?.id || ''}
-            agencyName={currentAgency?.name || ''}
+            agencyId={currentAgency?.id || ""}
+            agencyName={currentAgency?.name || ""}
           />
         )}
 
         {/* Expense Analysis Tab */}
-        {isAgency && activeTab === 'expenses' && (
+        {isAgency && activeTab === "expenses" && (
           <ExpenseAnalysis
             expenses={expenses}
             onExpenseSubmit={handleExpenseSubmit}
             onExpenseUpdate={handleExpenseUpdate}
             onExpenseDelete={handleExpenseDelete}
-            agencyId={currentAgency?.id || ''}
-            agencyName={currentAgency?.name || ''}
+            agencyId={currentAgency?.id || ""}
+            agencyName={currentAgency?.name || ""}
           />
         )}
 
         {/* Daily Analysis Tab */}
-        {isAgency && activeTab === 'analysis' && (
+        {isAgency && activeTab === "analysis" && (
           <DailyAnalysis
             data={dailyAnalysisData}
             orders={orders}
@@ -372,11 +392,11 @@ const Dashboard: React.FC = () => {
         )}
 
         {/* Messages Tab */}
-        {activeTab === 'messages' && (
+        {activeTab === "messages" && (
           <MessagingSystem
-            userType={userType || 'agency'}
-            agencyId={currentAgency?.id || currentWorker?.agencyId || ''}
-            agencyName={currentAgency?.name || ''}
+            userType={userType || "agency"}
+            agencyId={currentAgency?.id || currentWorker?.agencyId || ""}
+            agencyName={currentAgency?.name || ""}
             workerId={currentWorker?.id}
             workerName={currentWorker?.name}
             workers={workersForFilter}
@@ -388,10 +408,10 @@ const Dashboard: React.FC = () => {
           <OrderForm
             onSubmit={handleOrderSubmit}
             onClose={() => setIsFormOpen(false)}
-            agencyId={currentAgency?.id || currentWorker?.agencyId || ''}
+            agencyId={currentAgency?.id || currentWorker?.agencyId || ""}
             workerId={currentWorker?.id}
             workerName={currentWorker?.name}
-            userType={userType || 'agency'}
+            userType={userType || "agency"}
           />
         )}
       </div>
