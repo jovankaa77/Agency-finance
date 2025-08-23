@@ -5,12 +5,11 @@ import { Building2, LogIn, UserPlus } from 'lucide-react';
 const LoginPage: React.FC = () => {
   const [agencyName, setAgencyName] = useState('');
   const [password, setPassword] = useState('');
-  const [mode, setMode] = useState<'login-agency' | 'register-agency' | 'login-worker' | 'register-worker'>('login-agency');
+  const [mode, setMode] = useState<'login-agency' | 'register-agency' | 'login-worker'>('login-agency');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
-  const [agencyId, setAgencyId] = useState('');
-  const { login, register, loginWorker, registerWorker } = useAuth();
+  const { login, register, loginWorker } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,22 +38,6 @@ const LoginPage: React.FC = () => {
         const success = await login(agencyName, password);
         if (!success) {
           setError('Invalid agency name or password');
-        }
-      } else if (mode === 'register-worker') {
-        if (!agencyId.trim()) {
-          setError('Please enter agency ID');
-          setLoading(false);
-          return;
-        }
-        const success = await registerWorker(agencyName, password, agencyId);
-        if (success) {
-          setSuccess('Worker registered successfully! You can now login.');
-          setMode('login-worker');
-          setAgencyName('');
-          setPassword('');
-          setAgencyId('');
-        } else {
-          setError('Worker name already exists in this agency');
         }
       } else if (mode === 'login-worker') {
         const success = await loginWorker(agencyName, password);
@@ -118,23 +101,6 @@ const LoginPage: React.FC = () => {
               />
             </div>
 
-            {mode === 'register-worker' && (
-              <div>
-                <label htmlFor="agencyId" className="block text-sm font-medium text-gray-700 mb-2">
-                  Agency ID
-                </label>
-                <input
-                  id="agencyId"
-                  name="agencyId"
-                  type="text"
-                  required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                  placeholder="Enter agency ID (ask your manager)"
-                  value={agencyId}
-                  onChange={(e) => setAgencyId(e.target.value)}
-                />
-              </div>
-            )}
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
@@ -167,11 +133,6 @@ const LoginPage: React.FC = () => {
                   <UserPlus className="h-5 w-5 mr-2" />
                   Register Agency
                 </>
-              ) : mode === 'register-worker' ? (
-                <>
-                  <UserPlus className="h-5 w-5 mr-2" />
-                  Register Worker
-                </>
               ) : mode === 'login-agency' ? (
                 <>
                   <LogIn className="h-5 w-5 mr-2" />
@@ -190,20 +151,22 @@ const LoginPage: React.FC = () => {
             <button
               type="button"
               onClick={() => {
-                if (mode === 'login-agency') setMode('register-agency');
-                else if (mode === 'register-agency') setMode('login-agency');
-                else if (mode === 'login-worker') setMode('register-worker');
-                else if (mode === 'register-worker') setMode('login-worker');
+                if (mode === 'login-agency') {
+                  setMode('register-agency');
+                } else if (mode === 'register-agency') {
+                  setMode('login-agency');
+                } else if (mode === 'login-worker') {
+                  // No register option for worker, just toggle back to agency
+                  setMode('login-agency');
+                }
                 setError('');
                 setSuccess('');
-                setAgencyId('');
               }}
               className="text-blue-600 hover:text-blue-700 font-medium transition-colors duration-200"
             >
               {mode === 'login-agency' && "Don't have an agency account? Register"}
               {mode === 'register-agency' && 'Already have an agency account? Sign in'}
-              {mode === 'login-worker' && "Don't have a worker account? Register"}
-              {mode === 'register-worker' && 'Already have a worker account? Sign in'}
+              {mode === 'login-worker' && 'Back to Agency Login'}
             </button>
             
             <div className="text-gray-400">|</div>
@@ -217,7 +180,6 @@ const LoginPage: React.FC = () => {
                 setSuccess('');
                 setAgencyName('');
                 setPassword('');
-                setAgencyId('');
               }}
               className="text-indigo-600 hover:text-indigo-700 font-medium transition-colors duration-200"
             >

@@ -56,7 +56,6 @@ export interface AuthContextType {
   login: (agencyName: string, password: string) => Promise<boolean>;
   loginWorker: (workerName: string, password: string) => Promise<boolean>;
   register: (agencyName: string, password: string) => Promise<boolean>;
-  registerWorker: (workerName: string, password: string, agencyId: string) => Promise<boolean>;
   logout: () => void;
   isAuthenticated: boolean;
   loading: boolean;

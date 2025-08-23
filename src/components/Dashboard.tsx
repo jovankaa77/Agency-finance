@@ -22,6 +22,7 @@ import DailyAnalysis from './dashboard/DailyAnalysis';
 import ProfitExpenseAnalysis from './dashboard/ProfitExpenseAnalysis';
 import Header from './dashboard/Header';
 import MessagingSystem from './dashboard/MessagingSystem';
+import WorkerManagement from './dashboard/WorkerManagement';
 
 const Dashboard: React.FC = () => {
   const { currentAgency, currentWorker, userType } = useAuth();
@@ -30,7 +31,7 @@ const Dashboard: React.FC = () => {
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'orders' | 'expenses' | 'analysis' | 'profit-analysis' | 'messages'>('orders');
+  const [activeTab, setActiveTab] = useState<'orders' | 'workers' | 'expenses' | 'analysis' | 'messages'>('orders');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -242,6 +243,16 @@ const Dashboard: React.FC = () => {
               {isAgency && (
                 <>
                   <button
+                    onClick={() => setActiveTab('workers')}
+                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                      activeTab === 'workers'
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    Worker Management
+                  </button>
+                  <button
                     onClick={() => setActiveTab('expenses')}
                     className={`py-2 px-1 border-b-2 font-medium text-sm ${
                       activeTab === 'expenses'
@@ -329,6 +340,14 @@ const Dashboard: React.FC = () => {
             userType={userType || 'agency'}
           />
         </div>
+        )}
+
+        {/* Worker Management Tab */}
+        {isAgency && activeTab === 'workers' && (
+          <WorkerManagement
+            agencyId={currentAgency?.id || ''}
+            agencyName={currentAgency?.name || ''}
+          />
         )}
 
         {/* Expense Analysis Tab */}

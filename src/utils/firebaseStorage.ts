@@ -417,5 +417,26 @@ export const firebaseStorage = {
       console.error('Error deleting message:', error);
       return false;
     }
+  },
+
+  async updateWorker(workerId: string, updatedWorker: Partial<Worker>): Promise<boolean> {
+    try {
+      const workerRef = doc(db, 'workers', workerId);
+      await updateDoc(workerRef, updatedWorker);
+      return true;
+    } catch (error) {
+      console.error('Error updating worker:', error);
+      return false;
+    }
+  },
+
+  async deleteWorker(workerId: string): Promise<boolean> {
+    try {
+      await deleteDoc(doc(db, 'workers', workerId));
+      return true;
+    } catch (error) {
+      console.error('Error deleting worker:', error);
+      return false;
+    }
   }
 };

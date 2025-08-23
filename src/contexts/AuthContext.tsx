@@ -104,27 +104,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const registerWorker = async (workerName: string, password: string, agencyId: string): Promise<boolean> => {
-    try {
-      const exists = await firebaseStorage.workerExists(workerName, agencyId);
-      if (exists) {
-        return false;
-      }
-      
-      const newWorker = {
-        name: workerName,
-        password,
-        agencyId,
-        createdAt: new Date()
-      };
-      
-      const workerId = await firebaseStorage.saveWorker(newWorker);
-      return workerId !== null;
-    } catch (error) {
-      console.error('Worker registration error:', error);
-      return false;
-    }
-  };
 
   const logout = () => {
     setCurrentAgency(null);
@@ -144,7 +123,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       login,
       loginWorker,
       register,
-      registerWorker,
       logout,
       isAuthenticated,
       loading
