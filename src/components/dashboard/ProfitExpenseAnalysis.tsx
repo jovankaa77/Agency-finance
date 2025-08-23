@@ -1,10 +1,31 @@
-import React, { useState, useMemo } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
-import { Calendar, TrendingUp, TrendingDown, DollarSign, BarChart3, PieChart as PieChartIcon, Users } from 'lucide-react';
-import { Order, Expense } from '../../types';
-import { 
-  getWeekRevenue, 
-  getMonthRevenue, 
+import React, { useState, useMemo } from "react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
+import {
+  Calendar,
+  TrendingUp,
+  TrendingDown,
+  DollarSign,
+  BarChart3,
+  PieChart as PieChartIcon,
+  Users,
+} from "lucide-react";
+import { Order, Expense } from "../../types";
+import {
+  getWeekRevenue,
+  getMonthRevenue,
   getYearRevenue,
   getWeekExpenses,
   getMonthExpenses,
@@ -13,86 +34,96 @@ import {
   getMonthlyExpenseData,
   getWeeksInMonth,
   getWeekRevenueForMonth,
-  getWeekExpensesForMonth
-} from '../../utils/calculations';
+  getWeekExpensesForMonth,
+} from "../../utils/calculations";
 
 interface ProfitExpenseAnalysisProps {
   orders: Order[];
   expenses: Expense[];
-  userType: 'agency' | 'worker';
+  userType: "agency" | "worker";
   workers?: { id: string; name: string }[];
 }
 
-const ProfitExpenseAnalysis: React.FC<ProfitExpenseAnalysisProps> = ({ 
-  orders, 
-  expenses, 
+const ProfitExpenseAnalysis: React.FC<ProfitExpenseAnalysisProps> = ({
+  orders,
+  expenses,
   userType,
-  workers = []
+  workers = [],
 }) => {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedWeek, setSelectedWeek] = useState(1);
-  const [viewType, setViewType] = useState<'bar' | 'line' | 'pie'>('bar');
-  const [periodType, setPeriodType] = useState<'weekly' | 'monthly' | 'yearly'>('monthly');
-  const [selectedWorker, setSelectedWorker] = useState<string>('');
+  const [viewType, setViewType] = useState<"bar" | "line" | "pie">("bar");
+  const [periodType, setPeriodType] = useState<"weekly" | "monthly" | "yearly">(
+    "monthly"
+  );
+  const [selectedWorker, setSelectedWorker] = useState<string>("");
 
   const formatCurrency = (value: number) => {
-    return `Rp ${value.toLocaleString('id-ID')}`;
+    return `Rp ${value.toLocaleString("id-ID")}`;
   };
 
   // Generate years from 2020 to 2045
   const years = Array.from({ length: 26 }, (_, i) => 2020 + i);
   const months = [
-    { value: 1, label: 'January' },
-    { value: 2, label: 'February' },
-    { value: 3, label: 'March' },
-    { value: 4, label: 'April' },
-    { value: 5, label: 'May' },
-    { value: 6, label: 'June' },
-    { value: 7, label: 'July' },
-    { value: 8, label: 'August' },
-    { value: 9, label: 'September' },
-    { value: 10, label: 'October' },
-    { value: 11, label: 'November' },
-    { value: 12, label: 'December' }
+    { value: 1, label: "January" },
+    { value: 2, label: "February" },
+    { value: 3, label: "March" },
+    { value: 4, label: "April" },
+    { value: 5, label: "May" },
+    { value: 6, label: "June" },
+    { value: 7, label: "July" },
+    { value: 8, label: "August" },
+    { value: 9, label: "September" },
+    { value: 10, label: "October" },
+    { value: 11, label: "November" },
+    { value: 12, label: "December" },
   ];
 
   // Filter orders by selected worker if agency
   const filteredOrders = useMemo(() => {
-    if (userType === 'worker' || !selectedWorker) {
+    if (userType === "worker" || !selectedWorker) {
       return orders;
     }
-    return orders.filter(order => order.workerName === selectedWorker);
+    return orders.filter((order) => order.workerName === selectedWorker);
   }, [orders, selectedWorker, userType]);
 
   // Calculate data based on period type
   const analysisData = useMemo(() => {
-    if (periodType === 'yearly') {
+    if (periodType === "yearly") {
       // Yearly data for multiple years
-      return years.map(year => {
+      return years.map((year) => {
         const yearRevenue = getYearRevenue(filteredOrders, year);
-        const yearExpenses = userType === 'agency' ? getYearExpenses(expenses, year) : 0;
+        const yearExpenses =
+          userType === "agency" ? getYearExpenses(expenses, year) : 0;
         const yearProfit = yearRevenue - yearExpenses;
-        
+
         return {
           period: year.toString(),
           revenue: yearRevenue,
           expense: yearExpenses,
-          profit: yearProfit
+          profit: yearProfit,
         };
       });
-    } else if (periodType === 'monthly') {
+    } else if (periodType === "monthly") {
       // Monthly data for selected year
-      return months.map(month => {
-        const monthRevenue = getMonthRevenue(filteredOrders, month.value - 1, selectedYear);
-        const monthExpenses = userType === 'agency' ? getMonthExpenses(expenses, month.value - 1, selectedYear) : 0;
+      return months.map((month) => {
+        const monthRevenue = getMonthRevenue(
+          filteredOrders,
+          month.value - 1,
+          selectedYear
+        );
+        const monthExpenses =
+          userType === "agency"
+            ? getMonthExpenses(expenses, month.value - 1, selectedYear)
+            : 0;
         const monthProfit = monthRevenue - monthExpenses;
-        
+
         return {
           period: month.label.substring(0, 3),
           revenue: monthRevenue,
           expense: monthExpenses,
-          profit: monthProfit
+          profit: monthProfit,
         };
       });
     } else {
@@ -100,64 +131,108 @@ const ProfitExpenseAnalysis: React.FC<ProfitExpenseAnalysisProps> = ({
       const weeksInMonth = getWeeksInMonth(selectedYear, selectedMonth - 1);
       return Array.from({ length: weeksInMonth }, (_, i) => {
         const weekNumber = i + 1;
-        const weekRevenue = getWeekRevenueForMonth(filteredOrders, selectedYear, selectedMonth - 1, weekNumber);
-        const weekExpenses = userType === 'agency' ? getWeekExpensesForMonth(expenses, selectedYear, selectedMonth - 1, weekNumber) : 0;
+        const weekRevenue = getWeekRevenueForMonth(
+          filteredOrders,
+          selectedYear,
+          selectedMonth - 1,
+          weekNumber
+        );
+        const weekExpenses =
+          userType === "agency"
+            ? getWeekExpensesForMonth(
+                expenses,
+                selectedYear,
+                selectedMonth - 1,
+                weekNumber
+              )
+            : 0;
         const weekProfit = weekRevenue - weekExpenses;
-        
+
         return {
           period: `Week ${weekNumber}`,
           revenue: weekRevenue,
           expense: weekExpenses,
-          profit: weekProfit
+          profit: weekProfit,
         };
       });
     }
-  }, [filteredOrders, expenses, selectedYear, selectedMonth, periodType, userType]);
+  }, [
+    filteredOrders,
+    expenses,
+    selectedYear,
+    selectedMonth,
+    periodType,
+    userType,
+  ]);
 
   // Calculate totals
-  const totalRevenue = analysisData.reduce((sum, item) => sum + item.revenue, 0);
-  const totalExpenses = analysisData.reduce((sum, item) => sum + item.expense, 0);
+  const totalRevenue = analysisData.reduce(
+    (sum, item) => sum + item.revenue,
+    0
+  );
+  const totalExpenses = analysisData.reduce(
+    (sum, item) => sum + item.expense,
+    0
+  );
   const totalProfit = totalRevenue - totalExpenses;
 
   // Pie chart data
-  const pieData = userType === 'agency' && !selectedWorker ? [
-    { name: 'Revenue', value: totalRevenue, color: '#10b981' },
-    { name: 'Expenses', value: totalExpenses, color: '#ef4444' }
-  ] : [
-    { name: 'Revenue', value: totalRevenue, color: '#10b981' }
-  ];
+  const pieData =
+    userType === "agency" && !selectedWorker
+      ? [
+          { name: "Revenue", value: totalRevenue, color: "#10b981" },
+          { name: "Expenses", value: totalExpenses, color: "#ef4444" },
+        ]
+      : [{ name: "Revenue", value: totalRevenue, color: "#10b981" }];
 
-  const summaryCards = userType === 'agency' ? [
-    {
-      title: `Total Revenue (${periodType})`,
-      value: totalRevenue,
-      icon: TrendingUp,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50'
-    },
-    ...(selectedWorker ? [] : [{
-      title: `Total Expenses (${periodType})`,
-      value: totalExpenses,
-      icon: TrendingDown,
-      color: 'text-red-600',
-      bgColor: 'bg-red-50'
-    }]),
-    {
-      title: selectedWorker ? `Total Revenue (${periodType})` : `Net Profit (${periodType})`,
-      value: selectedWorker ? totalRevenue : totalProfit,
-      icon: DollarSign,
-      color: selectedWorker ? 'text-green-600' : (totalProfit >= 0 ? 'text-green-600' : 'text-red-600'),
-      bgColor: selectedWorker ? 'bg-green-50' : (totalProfit >= 0 ? 'bg-green-50' : 'bg-red-50')
-    }
-  ] : [
-    {
-      title: `Total Revenue (${periodType})`,
-      value: totalRevenue,
-      icon: TrendingUp,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50'
-    }
-  ];
+  const summaryCards =
+    userType === "agency"
+      ? [
+          {
+            title: `Total Revenue (${periodType})`,
+            value: totalRevenue,
+            icon: TrendingUp,
+            color: "text-green-600",
+            bgColor: "bg-green-50",
+          },
+          ...(selectedWorker
+            ? []
+            : [
+                {
+                  title: `Total Expenses (${periodType})`,
+                  value: totalExpenses,
+                  icon: TrendingDown,
+                  color: "text-red-600",
+                  bgColor: "bg-red-50",
+                },
+              ]),
+          {
+            title: selectedWorker
+              ? `Total Revenue (${periodType})`
+              : `Net Profit (${periodType})`,
+            value: selectedWorker ? totalRevenue : totalProfit,
+            icon: DollarSign,
+            color: selectedWorker
+              ? "text-green-600"
+              : totalProfit >= 0
+              ? "text-green-600"
+              : "text-red-600",
+            bgColor: selectedWorker
+              ? "bg-green-50"
+              : totalProfit >= 0
+              ? "bg-green-50"
+              : "bg-red-50",
+          },
+        ]
+      : [
+          {
+            title: `Total Revenue (${periodType})`,
+            value: totalRevenue,
+            icon: TrendingUp,
+            color: "text-green-600",
+            bgColor: "bg-green-50",
+          },
+        ];
 
   return (
     <div className="space-y-6">
@@ -166,7 +241,9 @@ const ProfitExpenseAnalysis: React.FC<ProfitExpenseAnalysisProps> = ({
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              {userType === 'agency' ? 'Profit & Expense Analysis' : 'Revenue Analysis'}
+              {userType === "agency"
+                ? "Profit & Expense Analysis"
+                : "Revenue Analysis"}
               {selectedWorker && (
                 <span className="text-sm font-normal text-blue-600 ml-2">
                   - {selectedWorker}
@@ -174,16 +251,15 @@ const ProfitExpenseAnalysis: React.FC<ProfitExpenseAnalysisProps> = ({
               )}
             </h3>
             <p className="text-gray-600">
-              {userType === 'agency' 
-                ? 'Analyze revenue, expenses, and profit trends with customizable date ranges'
-                : 'Analyze revenue trends with customizable date ranges'
-              }
+              {userType === "agency"
+                ? "Analyze revenue, expenses, and profit trends with customizable date ranges"
+                : "Analyze revenue trends with customizable date ranges"}
             </p>
           </div>
-          
+
           <div className="flex flex-wrap items-center gap-3">
             {/* Worker Filter for Agency */}
-            {userType === 'agency' && workers.length > 0 && (
+            {userType === "agency" && workers.length > 0 && (
               <div className="flex items-center gap-2">
                 <Users className="h-4 w-4 text-gray-600" />
                 <select
@@ -192,8 +268,10 @@ const ProfitExpenseAnalysis: React.FC<ProfitExpenseAnalysisProps> = ({
                   className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                 >
                   <option value="">All Workers</option>
-                  {workers.map(worker => (
-                    <option key={worker.id} value={worker.name}>{worker.name}</option>
+                  {workers.map((worker) => (
+                    <option key={worker.id} value={worker.name}>
+                      {worker.name}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -201,10 +279,16 @@ const ProfitExpenseAnalysis: React.FC<ProfitExpenseAnalysisProps> = ({
 
             {/* Period Type */}
             <div className="flex items-center gap-2">
-              <label className="text-sm font-medium text-gray-700">Period:</label>
+              <label className="text-sm font-medium text-gray-700">
+                Period:
+              </label>
               <select
                 value={periodType}
-                onChange={(e) => setPeriodType(e.target.value as 'weekly' | 'monthly' | 'yearly')}
+                onChange={(e) =>
+                  setPeriodType(
+                    e.target.value as "weekly" | "monthly" | "yearly"
+                  )
+                }
                 className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
               >
                 <option value="weekly">Weekly</option>
@@ -214,32 +298,40 @@ const ProfitExpenseAnalysis: React.FC<ProfitExpenseAnalysisProps> = ({
             </div>
 
             {/* Year Selector */}
-            {(periodType === 'monthly' || periodType === 'weekly') && (
+            {(periodType === "monthly" || periodType === "weekly") && (
               <div className="flex items-center gap-2">
-                <label className="text-sm font-medium text-gray-700">Year:</label>
+                <label className="text-sm font-medium text-gray-700">
+                  Year:
+                </label>
                 <select
                   value={selectedYear}
                   onChange={(e) => setSelectedYear(parseInt(e.target.value))}
                   className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                 >
-                  {years.map(year => (
-                    <option key={year} value={year}>{year}</option>
+                  {years.map((year) => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
                   ))}
                 </select>
               </div>
             )}
 
             {/* Month Selector */}
-            {periodType === 'weekly' && (
+            {periodType === "weekly" && (
               <div className="flex items-center gap-2">
-                <label className="text-sm font-medium text-gray-700">Month:</label>
+                <label className="text-sm font-medium text-gray-700">
+                  Month:
+                </label>
                 <select
                   value={selectedMonth}
                   onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
                   className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                 >
-                  {months.map(month => (
-                    <option key={month.value} value={month.value}>{month.label}</option>
+                  {months.map((month) => (
+                    <option key={month.value} value={month.value}>
+                      {month.label}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -248,33 +340,33 @@ const ProfitExpenseAnalysis: React.FC<ProfitExpenseAnalysisProps> = ({
             {/* Chart Type */}
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setViewType('bar')}
+                onClick={() => setViewType("bar")}
                 className={`p-2 rounded-lg transition-colors ${
-                  viewType === 'bar'
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                  viewType === "bar"
+                    ? "bg-blue-100 text-blue-700"
+                    : "text-gray-600 hover:text-gray-800 hover:bg-gray-100"
                 }`}
                 title="Bar Chart"
               >
                 <BarChart3 className="h-4 w-4" />
               </button>
               <button
-                onClick={() => setViewType('line')}
+                onClick={() => setViewType("line")}
                 className={`p-2 rounded-lg transition-colors ${
-                  viewType === 'line'
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                  viewType === "line"
+                    ? "bg-blue-100 text-blue-700"
+                    : "text-gray-600 hover:text-gray-800 hover:bg-gray-100"
                 }`}
                 title="Line Chart"
               >
                 <TrendingUp className="h-4 w-4" />
               </button>
               <button
-                onClick={() => setViewType('pie')}
+                onClick={() => setViewType("pie")}
                 className={`p-2 rounded-lg transition-colors ${
-                  viewType === 'pie'
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                  viewType === "pie"
+                    ? "bg-blue-100 text-blue-700"
+                    : "text-gray-600 hover:text-gray-800 hover:bg-gray-100"
                 }`}
                 title="Pie Chart"
               >
@@ -286,17 +378,30 @@ const ProfitExpenseAnalysis: React.FC<ProfitExpenseAnalysisProps> = ({
       </div>
 
       {/* Summary Cards */}
-      <div className={`grid ${userType === 'agency' ? (selectedWorker ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 md:grid-cols-3') : 'grid-cols-1'} gap-6`}>
+      <div
+        className={`grid ${
+          userType === "agency"
+            ? selectedWorker
+              ? "grid-cols-1 md:grid-cols-2"
+              : "grid-cols-1 md:grid-cols-3"
+            : "grid-cols-1"
+        } gap-6`}
+      >
         {summaryCards.map((card, index) => {
           const Icon = card.icon;
           return (
-            <div key={index} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <div
+              key={index}
+              className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6"
+            >
               <div className="flex items-center justify-between mb-4">
                 <div className={`p-3 rounded-xl ${card.bgColor}`}>
                   <Icon className={`h-6 w-6 ${card.color}`} />
                 </div>
               </div>
-              <div className="text-sm font-medium text-gray-600 mb-2">{card.title}</div>
+              <div className="text-sm font-medium text-gray-600 mb-2">
+                {card.title}
+              </div>
               <div className="text-2xl font-bold text-gray-900">
                 {formatCurrency(card.value)}
               </div>
@@ -312,23 +417,24 @@ const ProfitExpenseAnalysis: React.FC<ProfitExpenseAnalysisProps> = ({
             {periodType.charAt(0).toUpperCase() + periodType.slice(1)} Analysis
           </h4>
           <p className="text-gray-600">
-            {userType === 'agency' 
-              ? 'Revenue, expenses, and profit comparison'
-              : 'Revenue trends over time'
-            }
+            {userType === "agency"
+              ? "Revenue, expenses, and profit comparison"
+              : "Revenue trends over time"}
           </p>
         </div>
 
         <div className="h-96">
           <ResponsiveContainer width="100%" height="100%">
-            {viewType === 'pie' ? (
+            {viewType === "pie" ? (
               <PieChart>
                 <Pie
                   data={pieData}
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, value }) => `${name}: ${formatCurrency(value)}`}
+                  label={({ name, value }) =>
+                    `${name}: ${formatCurrency(value)}`
+                  }
                   outerRadius={120}
                   fill="#8884d8"
                   dataKey="value"
@@ -339,88 +445,109 @@ const ProfitExpenseAnalysis: React.FC<ProfitExpenseAnalysisProps> = ({
                 </Pie>
                 <Tooltip formatter={(value: number) => formatCurrency(value)} />
               </PieChart>
-            ) : viewType === 'bar' ? (
-              <BarChart data={analysisData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+            ) : viewType === "bar" ? (
+              <BarChart
+                data={analysisData}
+                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+              >
                 <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-                <XAxis 
-                  dataKey="period" 
-                  stroke="#6b7280"
-                  fontSize={12}
-                />
-                <YAxis 
+                <XAxis dataKey="period" stroke="#6b7280" fontSize={12} />
+                <YAxis
                   stroke="#6b7280"
                   fontSize={12}
                   tickFormatter={formatCurrency}
                 />
-                <Tooltip 
+                <Tooltip
                   formatter={(value: number, name: string) => [
-                    formatCurrency(value), 
-                    name === 'revenue' ? 'Revenue' : name === 'expense' ? 'Expenses' : 'Profit'
+                    formatCurrency(value),
+                    name === "revenue"
+                      ? "Revenue"
+                      : name === "expense"
+                      ? "Expenses"
+                      : "Profit",
                   ]}
                   contentStyle={{
-                    backgroundColor: '#fff',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                    backgroundColor: "#fff",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: "8px",
+                    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
                   }}
                 />
-                <Bar dataKey="revenue" fill="#10b981" name="revenue" radius={[2, 2, 0, 0]} />
-                {userType === 'agency' && !selectedWorker && (
+                <Bar
+                  dataKey="revenue"
+                  fill="#10b981"
+                  name="revenue"
+                  radius={[2, 2, 0, 0]}
+                />
+                {userType === "agency" && !selectedWorker && (
                   <>
-                    <Bar dataKey="expense" fill="#ef4444" name="expense" radius={[2, 2, 0, 0]} />
-                    <Bar dataKey="profit" fill="#3b82f6" name="profit" radius={[2, 2, 0, 0]} />
+                    <Bar
+                      dataKey="expense"
+                      fill="#ef4444"
+                      name="expense"
+                      radius={[2, 2, 0, 0]}
+                    />
+                    <Bar
+                      dataKey="profit"
+                      fill="#3b82f6"
+                      name="profit"
+                      radius={[2, 2, 0, 0]}
+                    />
                   </>
                 )}
               </BarChart>
             ) : (
-              <LineChart data={analysisData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+              <LineChart
+                data={analysisData}
+                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+              >
                 <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-                <XAxis 
-                  dataKey="period" 
-                  stroke="#6b7280"
-                  fontSize={12}
-                />
-                <YAxis 
+                <XAxis dataKey="period" stroke="#6b7280" fontSize={12} />
+                <YAxis
                   stroke="#6b7280"
                   fontSize={12}
                   tickFormatter={formatCurrency}
                 />
-                <Tooltip 
+                <Tooltip
                   formatter={(value: number, name: string) => [
-                    formatCurrency(value), 
-                    name === 'revenue' ? 'Revenue' : name === 'expense' ? 'Expenses' : 'Profit'
+                    formatCurrency(value),
+                    name === "revenue"
+                      ? "Revenue"
+                      : name === "expense"
+                      ? "Expenses"
+                      : "Profit",
                   ]}
                   contentStyle={{
-                    backgroundColor: '#fff',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                    backgroundColor: "#fff",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: "8px",
+                    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
                   }}
                 />
-                <Line 
-                  type="monotone" 
-                  dataKey="revenue" 
-                  stroke="#10b981" 
+                <Line
+                  type="monotone"
+                  dataKey="revenue"
+                  stroke="#10b981"
                   strokeWidth={3}
-                  dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
+                  dot={{ fill: "#10b981", strokeWidth: 2, r: 4 }}
                   name="revenue"
                 />
-                {userType === 'agency' && !selectedWorker && (
+                {userType === "agency" && !selectedWorker && (
                   <>
-                    <Line 
-                      type="monotone" 
-                      dataKey="expense" 
-                      stroke="#ef4444" 
+                    <Line
+                      type="monotone"
+                      dataKey="expense"
+                      stroke="#ef4444"
                       strokeWidth={3}
-                      dot={{ fill: '#ef4444', strokeWidth: 2, r: 4 }}
+                      dot={{ fill: "#ef4444", strokeWidth: 2, r: 4 }}
                       name="expense"
                     />
-                    <Line 
-                      type="monotone" 
-                      dataKey="profit" 
-                      stroke="#3b82f6" 
+                    <Line
+                      type="monotone"
+                      dataKey="profit"
+                      stroke="#3b82f6"
                       strokeWidth={3}
-                      dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
+                      dot={{ fill: "#3b82f6", strokeWidth: 2, r: 4 }}
                       name="profit"
                     />
                   </>
@@ -433,17 +560,27 @@ const ProfitExpenseAnalysis: React.FC<ProfitExpenseAnalysisProps> = ({
 
       {/* Data Table */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-        <h4 className="text-lg font-semibold text-gray-900 mb-4">Detailed Breakdown</h4>
+        <h4 className="text-lg font-semibold text-gray-900 mb-4">
+          Detailed Breakdown
+        </h4>
         <div className="overflow-x-auto">
           <table className="min-w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Period</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Revenue</th>
-                {userType === 'agency' && !selectedWorker && (
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Period
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Revenue
+                </th>
+                {userType === "agency" && !selectedWorker && (
                   <>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Expenses</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Profit</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Expenses
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Profit
+                    </th>
                   </>
                 )}
               </tr>
@@ -451,12 +588,22 @@ const ProfitExpenseAnalysis: React.FC<ProfitExpenseAnalysisProps> = ({
             <tbody className="divide-y divide-gray-200">
               {analysisData.map((item, index) => (
                 <tr key={index} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-sm font-medium text-gray-900">{item.period}</td>
-                  <td className="px-4 py-3 text-sm text-green-600 font-semibold">{formatCurrency(item.revenue)}</td>
-                  {userType === 'agency' && !selectedWorker && (
+                  <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                    {item.period}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-green-600 font-semibold">
+                    {formatCurrency(item.revenue)}
+                  </td>
+                  {userType === "agency" && !selectedWorker && (
                     <>
-                      <td className="px-4 py-3 text-sm text-red-600 font-semibold">{formatCurrency(item.expense)}</td>
-                      <td className={`px-4 py-3 text-sm font-semibold ${item.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      <td className="px-4 py-3 text-sm text-red-600 font-semibold">
+                        {formatCurrency(item.expense)}
+                      </td>
+                      <td
+                        className={`px-4 py-3 text-sm font-semibold ${
+                          item.profit >= 0 ? "text-green-600" : "text-red-600"
+                        }`}
+                      >
                         {formatCurrency(item.profit)}
                       </td>
                     </>
