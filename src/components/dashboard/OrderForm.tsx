@@ -1,44 +1,46 @@
-import React, { useState } from 'react';
-import { X, Plus, Minus, Hash } from 'lucide-react';
-import { Order, DownPayment } from '../../types';
-import { calculateOrderTotal } from '../../utils/calculations';
-import { firebaseStorage } from '../../utils/firebaseStorage';
+import React, { useState } from "react";
+import { X, Plus, Minus, Hash } from "lucide-react";
+import { Order, DownPayment } from "../../types";
+import { calculateOrderTotal } from "../../utils/calculations";
+import { firebaseStorage } from "../../utils/firebaseStorage";
 
 interface OrderFormProps {
-  onSubmit: (order: Omit<Order, 'id'>) => void;
+  onSubmit: (order: Omit<Order, "id">) => void;
   onClose: () => void;
   agencyId: string;
   workerId?: string;
   workerName?: string;
-  userType: 'agency' | 'worker';
+  userType: "agency" | "worker";
 }
 
-const OrderForm: React.FC<OrderFormProps> = ({ 
-  onSubmit, 
-  onClose, 
-  agencyId, 
-  workerId, 
-  workerName, 
-  userType 
+const OrderForm: React.FC<OrderFormProps> = ({
+  onSubmit,
+  onClose,
+  agencyId,
+  workerId,
+  workerName,
+  userType,
 }) => {
   const [formData, setFormData] = useState({
-    orderDate: '',
-    deadline: '',
-    customerName: '',
-    orderType: '',
-    status: 'Proses' as const,
-    validationStatus: 'Pending' as const
+    orderDate: "",
+    deadline: "",
+    customerName: "",
+    orderType: "",
+    status: "Proses" as const,
+    validationStatus: "Pending" as const,
   });
 
   const [downPayments, setDownPayments] = useState<DownPayment[]>([
-    { id: '1', amount: 0, label: 'DP 1' }
+    { id: "1", amount: 0, label: "DP 1" },
   ]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -46,31 +48,42 @@ const OrderForm: React.FC<OrderFormProps> = ({
     const newDP: DownPayment = {
       id: Date.now().toString(),
       amount: 0,
-      label: `DP ${downPayments.length + 1}`
+      label: `DP ${downPayments.length + 1}`,
     };
     setDownPayments([...downPayments, newDP]);
   };
 
   const removeDownPayment = (id: string) => {
     if (downPayments.length > 1) {
-      setDownPayments(downPayments.filter(dp => dp.id !== id));
+      setDownPayments(downPayments.filter((dp) => dp.id !== id));
     }
   };
 
-  const updateDownPayment = (id: string, field: 'percentage' | 'amount', value: number) => {
-    setDownPayments(prev => prev.map(dp => {
-      if (dp.id === id) {
-        return { ...dp, amount: value };
-      }
-      return dp;
-    }));
+  const updateDownPayment = (
+    id: string,
+    field: "percentage" | "amount",
+    value: number
+  ) => {
+    setDownPayments((prev) =>
+      prev.map((dp) => {
+        if (dp.id === id) {
+          return { ...dp, amount: value };
+        }
+        return dp;
+      })
+    );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.orderDate || !formData.deadline || !formData.customerName || !formData.orderType) {
-      alert('Please fill in all required fields');
+
+    if (
+      !formData.orderDate ||
+      !formData.deadline ||
+      !formData.customerName ||
+      !formData.orderType
+    ) {
+      alert("Please fill in all required fields");
       return;
     }
 
@@ -83,13 +96,14 @@ const OrderForm: React.FC<OrderFormProps> = ({
       ...formData,
       downPayments,
       totalAmount: 0,
-      createdAt: new Date()
+      createdAt: new Date(),
     };
 
     // Conditionally add worker fields only if userType is 'worker'
-    const newOrder = userType === 'worker' 
-      ? { ...baseOrder, workerId, workerName }
-      : { ...baseOrder, workerName: 'by agency' };
+    const newOrder =
+      userType === "worker"
+        ? { ...baseOrder, workerId, workerName }
+        : { ...baseOrder, workerName: "by agency" };
 
     newOrder.totalAmount = calculateOrderTotal(newOrder);
     onSubmit(newOrder);
@@ -101,7 +115,7 @@ const OrderForm: React.FC<OrderFormProps> = ({
         <div className="p-6 border-b border-gray-100">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold text-gray-900">
-              Add New Order {userType === 'worker' && `(${workerName})`}
+              Add New Order {userType === "worker" && `(${workerName})`}
             </h2>
             <button
               onClick={onClose}
@@ -191,21 +205,30 @@ const OrderForm: React.FC<OrderFormProps> = ({
             </div>
 
             {downPayments.map((dp, index) => (
-              <div key={dp.id} className="flex items-center gap-4 mb-3 p-4 bg-gray-50 rounded-lg">
+              <div
+                key={dp.id}
+                className="flex items-center gap-4 mb-3 p-4 bg-gray-50 rounded-lg"
+              >
                 <span className="text-sm font-medium text-gray-700 min-w-[40px]">
                   {dp.label}
                 </span>
-                
+
                 <div className="flex-1">
                   <input
                     type="number"
                     placeholder="Amount (Rp)"
-                    value={dp.amount || ''}
-                    onChange={(e) => updateDownPayment(dp.id, 'amount', parseInt(e.target.value) || 0)}
+                    value={dp.amount || ""}
+                    onChange={(e) =>
+                      updateDownPayment(
+                        dp.id,
+                        "amount",
+                        parseInt(e.target.value) || 0
+                      )
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                   />
                 </div>
-                
+
                 {downPayments.length > 1 && (
                   <button
                     type="button"
@@ -234,7 +257,7 @@ const OrderForm: React.FC<OrderFormProps> = ({
             </select>
           </div>
 
-          {userType === 'agency' && (
+          {userType === "agency" && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Validation Status

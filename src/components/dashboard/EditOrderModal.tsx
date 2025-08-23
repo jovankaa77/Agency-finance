@@ -1,20 +1,20 @@
-import React, { useState } from 'react';
-import { X, Plus, Minus, Hash } from 'lucide-react';
-import { Order, DownPayment } from '../../types';
-import { calculateOrderTotal } from '../../utils/calculations';
+import React, { useState } from "react";
+import { X, Plus, Minus, Hash } from "lucide-react";
+import { Order, DownPayment } from "../../types";
+import { calculateOrderTotal } from "../../utils/calculations";
 
 interface EditOrderModalProps {
   order: Order;
   onUpdate: (order: Order) => Promise<void>;
   onClose: () => void;
-  userType: 'agency' | 'worker';
+  userType: "agency" | "worker";
 }
 
-const EditOrderModal: React.FC<EditOrderModalProps> = ({ 
-  order, 
-  onUpdate, 
-  onClose, 
-  userType 
+const EditOrderModal: React.FC<EditOrderModalProps> = ({
+  order,
+  onUpdate,
+  onClose,
+  userType,
 }) => {
   const [formData, setFormData] = useState({
     orderDate: order.orderDate,
@@ -22,17 +22,21 @@ const EditOrderModal: React.FC<EditOrderModalProps> = ({
     customerName: order.customerName,
     orderType: order.orderType,
     status: order.status,
-    validationStatus: order.validationStatus
+    validationStatus: order.validationStatus,
   });
 
-  const [downPayments, setDownPayments] = useState<DownPayment[]>(order.downPayments);
+  const [downPayments, setDownPayments] = useState<DownPayment[]>(
+    order.downPayments
+  );
   const [loading, setLoading] = useState(false);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -40,37 +44,51 @@ const EditOrderModal: React.FC<EditOrderModalProps> = ({
     const newDP: DownPayment = {
       id: Date.now().toString(),
       amount: 0,
-      label: `DP ${downPayments.length + 1}`
+      label: `DP ${downPayments.length + 1}`,
     };
     setDownPayments([...downPayments, newDP]);
   };
 
   const removeDownPayment = (id: string) => {
     if (downPayments.length > 1) {
-      setDownPayments(downPayments.filter(dp => dp.id !== id));
+      setDownPayments(downPayments.filter((dp) => dp.id !== id));
     }
   };
 
-  const updateDownPayment = (id: string, field: 'percentage' | 'amount', value: number) => {
-    setDownPayments(prev => prev.map(dp => {
-      if (dp.id === id) {
-        return { ...dp, amount: value };
-      }
-      return dp;
-    }));
+  const updateDownPayment = (
+    id: string,
+    field: "percentage" | "amount",
+    value: number
+  ) => {
+    setDownPayments((prev) =>
+      prev.map((dp) => {
+        if (dp.id === id) {
+          return { ...dp, amount: value };
+        }
+        return dp;
+      })
+    );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.orderDate || !formData.deadline || !formData.customerName || !formData.orderType) {
-      alert('Please fill in all required fields');
+
+    if (
+      !formData.orderDate ||
+      !formData.deadline ||
+      !formData.customerName ||
+      !formData.orderType
+    ) {
+      alert("Please fill in all required fields");
       return;
     }
 
-    const totalDPAmount = downPayments.reduce((sum, dp) => sum + (dp.amount || 0), 0);
+    const totalDPAmount = downPayments.reduce(
+      (sum, dp) => sum + (dp.amount || 0),
+      0
+    );
     if (totalDPAmount <= 0) {
-      alert('Please enter valid down payment amounts');
+      alert("Please enter valid down payment amounts");
       return;
     }
 
@@ -80,15 +98,15 @@ const EditOrderModal: React.FC<EditOrderModalProps> = ({
         ...order,
         ...formData,
         downPayments,
-        totalAmount: 0
+        totalAmount: 0,
       };
 
       updatedOrder.totalAmount = calculateOrderTotal(updatedOrder);
       await onUpdate(updatedOrder);
       onClose();
     } catch (error) {
-      console.error('Error updating order:', error);
-      alert('Failed to update order. Please try again.');
+      console.error("Error updating order:", error);
+      alert("Failed to update order. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -99,9 +117,7 @@ const EditOrderModal: React.FC<EditOrderModalProps> = ({
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b border-gray-100">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-gray-900">
-              Edit Order
-            </h2>
+            <h2 className="text-xl font-semibold text-gray-900">Edit Order</h2>
             <button
               onClick={onClose}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -116,8 +132,12 @@ const EditOrderModal: React.FC<EditOrderModalProps> = ({
           <div className="bg-gray-50 p-4 rounded-lg border">
             <div className="flex items-center space-x-2">
               <Hash className="h-5 w-5 text-gray-600" />
-              <span className="text-sm font-medium text-gray-700">Order ID:</span>
-              <span className="text-lg font-bold text-blue-600">#{order.orderId}</span>
+              <span className="text-sm font-medium text-gray-700">
+                Order ID:
+              </span>
+              <span className="text-lg font-bold text-blue-600">
+                #{order.orderId}
+              </span>
             </div>
           </div>
 
@@ -199,21 +219,30 @@ const EditOrderModal: React.FC<EditOrderModalProps> = ({
             </div>
 
             {downPayments.map((dp, index) => (
-              <div key={dp.id} className="flex items-center gap-4 mb-3 p-4 bg-gray-50 rounded-lg">
+              <div
+                key={dp.id}
+                className="flex items-center gap-4 mb-3 p-4 bg-gray-50 rounded-lg"
+              >
                 <span className="text-sm font-medium text-gray-700 min-w-[40px]">
                   {dp.label}
                 </span>
-                
+
                 <div className="flex-1">
                   <input
                     type="number"
                     placeholder="Amount (Rp)"
-                    value={dp.amount || ''}
-                    onChange={(e) => updateDownPayment(dp.id, 'amount', parseInt(e.target.value) || 0)}
+                    value={dp.amount || ""}
+                    onChange={(e) =>
+                      updateDownPayment(
+                        dp.id,
+                        "amount",
+                        parseInt(e.target.value) || 0
+                      )
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                   />
                 </div>
-                
+
                 {downPayments.length > 1 && (
                   <button
                     type="button"
@@ -242,7 +271,7 @@ const EditOrderModal: React.FC<EditOrderModalProps> = ({
             </select>
           </div>
 
-          {userType === 'agency' && (
+          {userType === "agency" && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Validation Status
@@ -260,7 +289,7 @@ const EditOrderModal: React.FC<EditOrderModalProps> = ({
             </div>
           )}
 
-          {userType === 'worker' && (
+          {userType === "worker" && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Validation Status
@@ -268,7 +297,9 @@ const EditOrderModal: React.FC<EditOrderModalProps> = ({
               <div className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-600">
                 {formData.validationStatus}
               </div>
-              <p className="text-xs text-gray-500 mt-1">Only admin can change validation status</p>
+              <p className="text-xs text-gray-500 mt-1">
+                Only admin can change validation status
+              </p>
             </div>
           )}
 
@@ -286,7 +317,7 @@ const EditOrderModal: React.FC<EditOrderModalProps> = ({
               disabled={loading}
               className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-md disabled:opacity-50"
             >
-              {loading ? 'Updating...' : 'Update Order'}
+              {loading ? "Updating..." : "Update Order"}
             </button>
           </div>
         </form>
