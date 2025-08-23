@@ -60,7 +60,7 @@ const OrderForm: React.FC<OrderFormProps> = ({
   const updateDownPayment = (id: string, field: 'percentage' | 'amount', value: number) => {
     setDownPayments(prev => prev.map(dp => {
       if (dp.id === id) {
-        return { ...dp, [field]: value };
+        return { ...dp, amount: value };
       }
       return dp;
     }));
@@ -201,7 +201,7 @@ const OrderForm: React.FC<OrderFormProps> = ({
                     type="number"
                     placeholder="Amount (Rp)"
                     value={dp.amount || ''}
-                    onChange={(e) => updateDownPayment(dp.id, 'amount', parseFloat(e.target.value) || 0)}
+                    onChange={(e) => updateDownPayment(dp.id, 'amount', parseInt(e.target.value) || 0)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                   />
                 </div>
