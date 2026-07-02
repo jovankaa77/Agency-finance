@@ -1,0 +1,638 @@
+import React, { useState, useMemo } from "react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
+import {
+  Calendar,
+  TrendingUp,
+  TrendingDown,
+  DollarSign,
+  BarChart3,
+  PieChart as PieChartIcon,
+  Users,
+} from "lucide-react";
+import { Order, Expense } from "../../types";
+import {
+  getWeekRevenue,
+  getMonthRevenue,
+  getYearRevenue,
+  getWeekExpenses,
+  getMonthExpenses,
+  getYearExpenses,
+  getMonthlyRevenueData,
+  getMonthlyExpenseData,
+  getWeeksInMonth,
+  getWeekRevenueForMonth,
+  getWeekExpensesForMonth,
+} from "../../utils/calculations";
+import { useTheme } from "../../contexts/ThemeContext";
+import { getChartTheme } from "../../utils/chartTheme";
+
+interface ProfitExpenseAnalysisProps {
+  orders: Order[];
+  expenses: Expense[];
+  userType: "agency" | "worker";
+  workers?: { id: string; name: string }[];
+}
+
+const ProfitExpenseAnalysis: React.FC<ProfitExpenseAnalysisProps> = ({
+  orders,
+  expenses,
+  userType,
+  workers = [],
+}) => {
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [selectedWeek, setSelectedWeek] = useState(1);
+  const [viewType, setViewType] = useState<"bar" | "line" | "pie">("bar");
+  const [periodType, setPeriodType] = useState<"weekly" | "monthly" | "yearly">(
+    "monthly"
+  );
+  const [selectedWorker, setSelectedWorker] = useState<string>("");
+
+  const { theme } = useTheme();
+  const chartTheme = getChartTheme(theme);
+
+  const formatCurrency = (value: number) => {
+    return `Rp ${value.toLocaleString("id-ID")}`;
+  };
+
+  // Generate years from 2020 to 2045
+  const years = Array.from({ length: 26 }, (_, i) => 2020 + i);
+  const months = [
+    { value: 1, label: "January" },
+    { value: 2, label: "February" },
+    { value: 3, label: "March" },
+    { value: 4, label: "April" },
+    { value: 5, label: "May" },
+    { value: 6, label: "June" },
+    { value: 7, label: "July" },
+    { value: 8, label: "August" },
+    { value: 9, label: "September" },
+    { value: 10, label: "October" },
+    { value: 11, label: "November" },
+    { value: 12, label: "December" },
+  ];
+
+  // Filter orders by selected worker if agency
+  const filteredOrders = useMemo(() => {
+    if (userType === "worker" || !selectedWorker) {
+      return orders;
+    }
+    return orders.filter((order) => order.workerName === selectedWorker);
+  }, [orders, selectedWorker, userType]);
+
+  // Calculate data based on period type
+  const analysisData = useMemo(() => {
+    if (periodType === "yearly") {
+      // Yearly data for multiple years
+      return years.map((year) => {
+        const yearRevenue = getYearRevenue(filteredOrders, year);
+        const yearExpenses =
+          userType === "agency" ? getYearExpenses(expenses, year) : 0;
+        const yearProfit = yearRevenue - yearExpenses;
+
+        return {
+          period: year.toString(),
+          revenue: yearRevenue,
+          expense: yearExpenses,
+          profit: yearProfit,
+        };
+      });
+    } else if (periodType === "monthly") {
+      // Monthly data for selected year
+      return months.map((month) => {
+        const monthRevenue = getMonthRevenue(
+          filteredOrders,
+          month.value - 1,
+          selectedYear
+        );
+        const monthExpenses =
+          userType === "agency"
+            ? getMonthExpenses(expenses, month.value - 1, selectedYear)
+            : 0;
+        const monthProfit = monthRevenue - monthExpenses;
+
+        return {
+          period: month.label.substring(0, 3),
+          revenue: monthRevenue,
+          expense: monthExpenses,
+          profit: monthProfit,
+        };
+      });
+    } else {
+      // Weekly data for selected month and year
+      const weeksInMonth = getWeeksInMonth(selectedYear, selectedMonth - 1);
+      return Array.from({ length: weeksInMonth }, (_, i) => {
+        const weekNumber = i + 1;
+        const weekRevenue = getWeekRevenueForMonth(
+          filteredOrders,
+          selectedYear,
+          selectedMonth - 1,
+          weekNumber
+        );
+        const weekExpenses =
+          userType === "agency"
+            ? getWeekExpensesForMonth(
+                expenses,
+                selectedYear,
+                selectedMonth - 1,
+                weekNumber
+              )
+            : 0;
+        const weekProfit = weekRevenue - weekExpenses;
+
+        return {
+          period: `Week ${weekNumber}`,
+          revenue: weekRevenue,
+          expense: weekExpenses,
+          profit: weekProfit,
+        };
+      });
+    }
+  }, [
+    filteredOrders,
+    expenses,
+    selectedYear,
+    selectedMonth,
+    periodType,
+    userType,
+  ]);
+
+  // Calculate totals
+  const totalRevenue = analysisData.reduce(
+    (sum, item) => sum + item.revenue,
+    0
+  );
+  const totalExpenses = analysisData.reduce(
+    (sum, item) => sum + item.expense,
+    0
+  );
+  const totalProfit = totalRevenue - totalExpenses;
+
+  // Pie chart data
+  const pieData =
+    userType === "agency" && !selectedWorker
+      ? [
+          { name: "Revenue", value: totalRevenue, color: "#10b981" },
+          { name: "Expenses", value: totalExpenses, color: "#ef4444" },
+        ]
+      : [{ name: "Revenue", value: totalRevenue, color: "#10b981" }];
+
+  const summaryCards =
+    userType === "agency"
+      ? [
+          {
+            title: `Total Revenue (${periodType})`,
+            value: totalRevenue,
+            icon: TrendingUp,
+            color: "text-green-600 dark:text-green-400",
+            bgColor: "bg-green-50 dark:bg-green-900/30",
+          },
+          ...(selectedWorker
+            ? []
+            : [
+                {
+                  title: `Total Expenses (${periodType})`,
+                  value: totalExpenses,
+                  icon: TrendingDown,
+                  color: "text-red-600 dark:text-red-400",
+                  bgColor: "bg-red-50 dark:bg-red-900/30",
+                },
+              ]),
+          {
+            title: selectedWorker
+              ? `Total Revenue (${periodType})`
+              : `Net Profit (${periodType})`,
+            value: selectedWorker ? totalRevenue : totalProfit,
+            icon: DollarSign,
+            color: selectedWorker
+              ? "text-green-600 dark:text-green-400"
+              : totalProfit >= 0
+              ? "text-green-600 dark:text-green-400"
+              : "text-red-600 dark:text-red-400",
+            bgColor: selectedWorker
+              ? "bg-green-50 dark:bg-green-900/30"
+              : totalProfit >= 0
+              ? "bg-green-50 dark:bg-green-900/30"
+              : "bg-red-50 dark:bg-red-900/30",
+          },
+        ]
+      : [
+          {
+            title: `Total Revenue (${periodType})`,
+            value: totalRevenue,
+            icon: TrendingUp,
+            color: "text-green-600 dark:text-green-400",
+            bgColor: "bg-green-50 dark:bg-green-900/30",
+          },
+        ];
+
+  return (
+    <div className="space-y-6">
+      {/* Controls */}
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+              {userType === "agency"
+                ? "Profit & Expense Analysis"
+                : "Revenue Analysis"}
+              {selectedWorker && (
+                <span className="text-sm font-normal text-blue-600 dark:text-blue-400 ml-2">
+                  - {selectedWorker}
+                </span>
+              )}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              {userType === "agency"
+                ? "Analyze revenue, expenses, and profit trends with customizable date ranges"
+                : "Analyze revenue trends with customizable date ranges"}
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Worker Filter for Agency */}
+            {userType === "agency" && workers.length > 0 && (
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                <select
+                  value={selectedWorker}
+                  onChange={(e) => setSelectedWorker(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                >
+                  <option value="">All Workers</option>
+                  {workers.map((worker) => (
+                    <option key={worker.id} value={worker.name}>
+                      {worker.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Period Type */}
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                Period:
+              </label>
+              <select
+                value={periodType}
+                onChange={(e) =>
+                  setPeriodType(
+                    e.target.value as "weekly" | "monthly" | "yearly"
+                  )
+                }
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              >
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+                <option value="yearly">Yearly</option>
+              </select>
+            </div>
+
+            {/* Year Selector */}
+            {(periodType === "monthly" || periodType === "weekly") && (
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                  Year:
+                </label>
+                <select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                >
+                  {years.map((year) => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Month Selector */}
+            {periodType === "weekly" && (
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                  Month:
+                </label>
+                <select
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                >
+                  {months.map((month) => (
+                    <option key={month.value} value={month.value}>
+                      {month.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Chart Type */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setViewType("bar")}
+                className={`p-2 rounded-lg transition-colors ${
+                  viewType === "bar"
+                    ? "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                }`}
+                title="Bar Chart"
+              >
+                <BarChart3 className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setViewType("line")}
+                className={`p-2 rounded-lg transition-colors ${
+                  viewType === "line"
+                    ? "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                }`}
+                title="Line Chart"
+              >
+                <TrendingUp className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setViewType("pie")}
+                className={`p-2 rounded-lg transition-colors ${
+                  viewType === "pie"
+                    ? "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                }`}
+                title="Pie Chart"
+              >
+                <PieChartIcon className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Summary Cards */}
+      <div
+        className={`grid ${
+          userType === "agency"
+            ? selectedWorker
+              ? "grid-cols-1 md:grid-cols-2"
+              : "grid-cols-1 md:grid-cols-3"
+            : "grid-cols-1"
+        } gap-6`}
+      >
+        {summaryCards.map((card, index) => {
+          const Icon = card.icon;
+          return (
+            <div
+              key={index}
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className={`p-3 rounded-xl ${card.bgColor}`}>
+                  <Icon className={`h-6 w-6 ${card.color}`} />
+                </div>
+              </div>
+              <div className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+                {card.title}
+              </div>
+              <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {formatCurrency(card.value)}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Chart */}
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+        <div className="mb-6">
+          <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+            {periodType.charAt(0).toUpperCase() + periodType.slice(1)} Analysis
+          </h4>
+          <p className="text-gray-600 dark:text-gray-400">
+            {userType === "agency"
+              ? "Revenue, expenses, and profit comparison"
+              : "Revenue trends over time"}
+          </p>
+        </div>
+
+        <div className="h-96">
+          <ResponsiveContainer width="100%" height="100%">
+            {viewType === "pie" ? (
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, value }) =>
+                    `${name}: ${formatCurrency(value)}`
+                  }
+                  outerRadius={120}
+                  fill="#8884d8"
+                  dataKey="value"
+                  style={{ fill: chartTheme.tooltipText }}
+                >
+                  {pieData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  formatter={(value: number) => formatCurrency(value)}
+                  contentStyle={{
+                    backgroundColor: chartTheme.tooltipBg,
+                    border: `1px solid ${chartTheme.tooltipBorder}`,
+                    borderRadius: "8px",
+                    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                    color: chartTheme.tooltipText,
+                  }}
+                />
+              </PieChart>
+            ) : viewType === "bar" ? (
+              <BarChart
+                data={analysisData}
+                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} />
+                <XAxis dataKey="period" stroke={chartTheme.axis} fontSize={12} />
+                <YAxis
+                  stroke={chartTheme.axis}
+                  fontSize={12}
+                  tickFormatter={formatCurrency}
+                />
+                <Tooltip
+                  formatter={(value: number, name: string) => [
+                    formatCurrency(value),
+                    name === "revenue"
+                      ? "Revenue"
+                      : name === "expense"
+                      ? "Expenses"
+                      : "Profit",
+                  ]}
+                  contentStyle={{
+                    backgroundColor: chartTheme.tooltipBg,
+                    border: `1px solid ${chartTheme.tooltipBorder}`,
+                    borderRadius: "8px",
+                    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                    color: chartTheme.tooltipText,
+                  }}
+                />
+                <Bar
+                  dataKey="revenue"
+                  fill="#10b981"
+                  name="revenue"
+                  radius={[2, 2, 0, 0]}
+                />
+                {userType === "agency" && !selectedWorker && (
+                  <>
+                    <Bar
+                      dataKey="expense"
+                      fill="#ef4444"
+                      name="expense"
+                      radius={[2, 2, 0, 0]}
+                    />
+                    <Bar
+                      dataKey="profit"
+                      fill="#3b82f6"
+                      name="profit"
+                      radius={[2, 2, 0, 0]}
+                    />
+                  </>
+                )}
+              </BarChart>
+            ) : (
+              <LineChart
+                data={analysisData}
+                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} />
+                <XAxis dataKey="period" stroke={chartTheme.axis} fontSize={12} />
+                <YAxis
+                  stroke={chartTheme.axis}
+                  fontSize={12}
+                  tickFormatter={formatCurrency}
+                />
+                <Tooltip
+                  formatter={(value: number, name: string) => [
+                    formatCurrency(value),
+                    name === "revenue"
+                      ? "Revenue"
+                      : name === "expense"
+                      ? "Expenses"
+                      : "Profit",
+                  ]}
+                  contentStyle={{
+                    backgroundColor: chartTheme.tooltipBg,
+                    border: `1px solid ${chartTheme.tooltipBorder}`,
+                    borderRadius: "8px",
+                    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                    color: chartTheme.tooltipText,
+                  }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="revenue"
+                  stroke="#10b981"
+                  strokeWidth={3}
+                  dot={{ fill: "#10b981", strokeWidth: 2, r: 4 }}
+                  name="revenue"
+                />
+                {userType === "agency" && !selectedWorker && (
+                  <>
+                    <Line
+                      type="monotone"
+                      dataKey="expense"
+                      stroke="#ef4444"
+                      strokeWidth={3}
+                      dot={{ fill: "#ef4444", strokeWidth: 2, r: 4 }}
+                      name="expense"
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="profit"
+                      stroke="#3b82f6"
+                      strokeWidth={3}
+                      dot={{ fill: "#3b82f6", strokeWidth: 2, r: 4 }}
+                      name="profit"
+                    />
+                  </>
+                )}
+              </LineChart>
+            )}
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Data Table */}
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+        <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+          Detailed Breakdown
+        </h4>
+        <div className="overflow-x-auto">
+          <table className="min-w-full">
+            <thead className="bg-gray-50 dark:bg-gray-700/50">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                  Period
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                  Revenue
+                </th>
+                {userType === "agency" && !selectedWorker && (
+                  <>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                      Expenses
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                      Profit
+                    </th>
+                  </>
+                )}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+              {analysisData.map((item, index) => (
+                <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                  <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">
+                    {item.period}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-green-600 dark:text-green-400 font-semibold">
+                    {formatCurrency(item.revenue)}
+                  </td>
+                  {userType === "agency" && !selectedWorker && (
+                    <>
+                      <td className="px-4 py-3 text-sm text-red-600 dark:text-red-400 font-semibold">
+                        {formatCurrency(item.expense)}
+                      </td>
+                      <td
+                        className={`px-4 py-3 text-sm font-semibold ${
+                          item.profit >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
+                        }`}
+                      >
+                        {formatCurrency(item.profit)}
+                      </td>
+                    </>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ProfitExpenseAnalysis;

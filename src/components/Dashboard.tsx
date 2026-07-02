@@ -1,0 +1,422 @@
+import React, { useState, useEffect } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import { Order, Expense, Message, Worker } from "../types";
+import { firebaseStorage } from "../utils/firebaseStorage";
+import {
+  getWeekRevenue,
+  getMonthRevenue,
+  getYearRevenue,
+  getMonthlyRevenueData,
+  getWeekExpenses,
+  getMonthExpenses,
+  getYearExpenses,
+  calculateExpenseTotal,
+  getDailyAnalysisData,
+} from "../utils/calculations";
+import RevenueCards from "./dashboard/RevenueCards";
+import OrderForm from "./dashboard/OrderForm";
+import OrderTable from "./dashboard/OrderTable";
+import RevenueChart from "./dashboard/RevenueChart";
+import ExpenseAnalysis from "./dashboard/ExpenseAnalysis";
+import DailyAnalysis from "./dashboard/DailyAnalysis";
+import ProfitExpenseAnalysis from "./dashboard/ProfitExpenseAnalysis";
+import Header from "./dashboard/Header";
+import MessagingSystem from "./dashboard/MessagingSystem";
+import WorkerManagement from "./dashboard/WorkerManagement";
+
+const Dashboard: React.FC = () => {
+  const { currentAgency, currentWorker, userType } = useAuth();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [workers, setWorkers] = useState<Worker[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<
+    "orders" | "workers" | "expenses" | "analysis" | "messages"
+  >("orders");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (currentAgency || currentWorker) {
+      loadOrders();
+      loadMessages();
+      if (userType === "agency") {
+        loadExpenses();
+        loadWorkers();
+      }
+    }
+  }, [currentAgency, currentWorker]);
+
+  const loadOrders = async () => {
+    if (currentAgency || currentWorker) {
+      setLoading(true);
+      try {
+        let fetchedOrders: Order[];
+        if (userType === "agency" && currentAgency) {
+          fetchedOrders = await firebaseStorage.getOrders(currentAgency.id);
+        } else if (userType === "worker" && currentWorker) {
+          fetchedOrders = await firebaseStorage.getOrdersByWorker(
+            currentWorker.id
+          );
+        } else {
+          fetchedOrders = [];
+        }
+        setOrders(fetchedOrders);
+      } catch (error) {
+        console.error("Error loading orders:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const loadExpenses = async () => {
+    if (currentAgency) {
+      try {
+        const fetchedExpenses = await firebaseStorage.getExpenses(
+          currentAgency.id
+        );
+        setExpenses(fetchedExpenses);
+      } catch (error) {
+        console.error("Error loading expenses:", error);
+      }
+    }
+  };
+
+  const loadWorkers = async () => {
+    if (currentAgency) {
+      try {
+        const fetchedWorkers = await firebaseStorage.getWorkers(
+          currentAgency.id
+        );
+        setWorkers(fetchedWorkers);
+      } catch (error) {
+        console.error("Error loading workers:", error);
+      }
+    }
+  };
+
+  const loadMessages = async () => {
+    if (currentWorker) {
+      try {
+        const fetchedMessages = await firebaseStorage.getMessages(
+          currentWorker.id,
+          "worker"
+        );
+        setMessages(fetchedMessages);
+      } catch (error) {
+        console.error("Error loading messages:", error);
+      }
+    } else if (currentAgency) {
+      try {
+        const fetchedMessages = await firebaseStorage.getMessages(
+          currentAgency.id,
+          "agency"
+        );
+        setMessages(fetchedMessages);
+      } catch (error) {
+        console.error("Error loading messages:", error);
+      }
+    }
+  };
+
+  const handleOrderSubmit = async (order: Omit<Order, "id">) => {
+    try {
+      await firebaseStorage.saveOrder(order);
+      await loadOrders();
+      setIsFormOpen(false);
+    } catch (error) {
+      console.error("Error saving order:", error);
+    }
+  };
+
+  const handleOrderUpdate = async (updatedOrder: Order) => {
+    try {
+      await firebaseStorage.updateOrder(updatedOrder.id, updatedOrder);
+      await loadOrders();
+    } catch (error) {
+      console.error("Error updating order:", error);
+    }
+  };
+
+  const handleOrderDelete = async (orderId: string) => {
+    try {
+      await firebaseStorage.deleteOrder(orderId);
+      await loadOrders();
+    } catch (error) {
+      console.error("Error deleting order:", error);
+    }
+  };
+
+  const handleExpenseSubmit = async (expense: Omit<Expense, "id">) => {
+    try {
+      await firebaseStorage.saveExpense(expense);
+      await loadExpenses();
+    } catch (error) {
+      console.error("Error saving expense:", error);
+    }
+  };
+
+  const handleExpenseUpdate = async (updatedExpense: Expense) => {
+    try {
+      await firebaseStorage.updateExpense(updatedExpense.id, updatedExpense);
+      await loadExpenses();
+    } catch (error) {
+      console.error("Error updating expense:", error);
+    }
+  };
+
+  const handleExpenseDelete = async (expenseId: string) => {
+    try {
+      await firebaseStorage.deleteExpense(expenseId);
+      await loadExpenses();
+    } catch (error) {
+      console.error("Error deleting expense:", error);
+    }
+  };
+
+  if (!currentAgency && !currentWorker) return null;
+
+  const currentUser = currentAgency || currentWorker;
+  const isAgency = userType === "agency";
+
+  const weeklyRevenue = getWeekRevenue(orders);
+  const monthlyRevenue = getMonthRevenue(orders);
+  const yearlyRevenue = getYearRevenue(orders);
+  const weeklyExpenses = getWeekExpenses(expenses);
+  const monthlyExpenses = getMonthExpenses(expenses);
+  const yearlyExpenses = getYearExpenses(expenses);
+  const totalExpenses = calculateExpenseTotal(expenses);
+  const chartData = getMonthlyRevenueData(orders);
+  const dailyAnalysisData = getDailyAnalysisData(orders, expenses);
+
+  const unreadMessageCount = messages.filter((m) => !m.isRead).length;
+  const filteredUnreadMessages = messages.filter((message) => {
+    if (userType === "agency") {
+      return message.toType === "agency" && !message.isRead;
+    } else {
+      return message.toType === "worker" && !message.isRead;
+    }
+  });
+  const actualUnreadCount = filteredUnreadMessages.length;
+  const workersForFilter = workers.map((w) => ({ id: w.id, name: w.name }));
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <Header
+        unreadMessageCount={actualUnreadCount}
+        onMessagesClick={() => setActiveTab("messages")}
+      />
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Welcome Section */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+            Welcome back, {currentUser?.name}
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400">
+            {isAgency
+              ? "Here's your agency's financial overview and recent activity"
+              : "Here's your work overview and recent activity"}
+          </p>
+        </div>
+
+        {/* Profit Analysis Section */}
+        <div className="mb-8">
+          <ProfitExpenseAnalysis
+            orders={orders}
+            expenses={expenses}
+            userType={userType || "agency"}
+            workers={workersForFilter}
+          />
+        </div>
+
+        {/* Tab Navigation */}
+        <div className="mb-6">
+          <div className="border-b border-gray-200 dark:border-gray-700">
+            <nav className="-mb-px flex space-x-8">
+              <button
+                onClick={() => setActiveTab("orders")}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === "orders"
+                    ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                    : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600"
+                }`}
+              >
+                Order Management
+              </button>
+              {isAgency && (
+                <>
+                  <button
+                    onClick={() => setActiveTab("workers")}
+                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                      activeTab === "workers"
+                        ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                        : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600"
+                    }`}
+                  >
+                    Worker Management
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("expenses")}
+                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                      activeTab === "expenses"
+                        ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                        : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600"
+                    }`}
+                  >
+                    Expense Analysis
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("analysis")}
+                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                      activeTab === "analysis"
+                        ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                        : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600"
+                    }`}
+                  >
+                    Daily Analysis
+                  </button>
+                </>
+              )}
+              {!isAgency && (
+                <button
+                  onClick={() => setActiveTab("messages")}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm relative ${
+                    activeTab === "messages"
+                      ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                      : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600"
+                  }`}
+                >
+                  Messages
+                  {actualUnreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                      {actualUnreadCount}
+                    </span>
+                  )}
+                </button>
+              )}
+              {isAgency && (
+                <button
+                  onClick={() => setActiveTab("messages")}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === "messages"
+                      ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                      : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600"
+                  }`}
+                >
+                  Messages
+                  {actualUnreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                      {actualUnreadCount}
+                    </span>
+                  )}
+                </button>
+              )}
+            </nav>
+          </div>
+        </div>
+
+        {/* Content based on active tab */}
+        {(!isAgency || activeTab === "orders") && (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+            <div className="p-6 border-b border-gray-100 dark:border-gray-700">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                    Order Management
+                  </h2>
+                  <p className="text-gray-600 dark:text-gray-400 mt-1">
+                    {isAgency
+                      ? "Track and manage all agency orders"
+                      : "Track and manage your orders"}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setIsFormOpen(true)}
+                  className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-md hover:shadow-lg"
+                >
+                  + Add New Order
+                </button>
+              </div>
+            </div>
+
+            <OrderTable
+              orders={orders}
+              onOrderUpdate={handleOrderUpdate}
+              onOrderDelete={handleOrderDelete}
+              agencyName={currentUser?.name || ""}
+              userType={userType || "agency"}
+            />
+          </div>
+        )}
+
+        {/* Worker Management Tab */}
+        {isAgency && activeTab === "workers" && (
+          <WorkerManagement
+            agencyId={currentAgency?.id || ""}
+            agencyName={currentAgency?.name || ""}
+          />
+        )}
+
+        {/* Expense Analysis Tab */}
+        {isAgency && activeTab === "expenses" && (
+          <ExpenseAnalysis
+            expenses={expenses}
+            onExpenseSubmit={handleExpenseSubmit}
+            onExpenseUpdate={handleExpenseUpdate}
+            onExpenseDelete={handleExpenseDelete}
+            agencyId={currentAgency?.id || ""}
+            agencyName={currentAgency?.name || ""}
+          />
+        )}
+
+        {/* Daily Analysis Tab */}
+        {isAgency && activeTab === "analysis" && (
+          <DailyAnalysis
+            data={dailyAnalysisData}
+            orders={orders}
+            expenses={expenses}
+          />
+        )}
+
+        {/* Messages Tab */}
+        {activeTab === "messages" && (
+          <MessagingSystem
+            userType={userType || "agency"}
+            agencyId={currentAgency?.id || currentWorker?.agencyId || ""}
+            agencyName={currentAgency?.name || ""}
+            workerId={currentWorker?.id}
+            workerName={currentWorker?.name}
+            workers={workersForFilter}
+          />
+        )}
+
+        {/* Order Form Modal */}
+        {isFormOpen && (
+          <OrderForm
+            onSubmit={handleOrderSubmit}
+            onClose={() => setIsFormOpen(false)}
+            agencyId={currentAgency?.id || currentWorker?.agencyId || ""}
+            workerId={currentWorker?.id}
+            workerName={currentWorker?.name}
+            userType={userType || "agency"}
+          />
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default Dashboard;
